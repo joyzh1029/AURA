@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, Music, Video, Loader2 } from 'lucide-react';
 import { useChat } from '@/contexts/ChatContext';
-import { uploadImage } from '@/services/api';
+import { uploadImage, uploadVideo } from '@/services/api';
 
 interface FileUploaderProps {
   type: 'image' | 'video' | 'music';
@@ -35,8 +35,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
 
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
-        if (video.duration > 3) {
-          toast.error('영상은 3초 이하만 업로드 가능합니다.');
+        if (video.duration > 15) {
+          toast.error('영상은 15초 이하만 업로드 가능합니다.');
           resolve(false);
         }
         resolve(true);
@@ -91,15 +91,27 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
         toast.error('지원하지 않는 영상 형식입니다. MP4, WebM, MOV 형식만 지원합니다.');
         return;
       }
-      if (file.size > 50 * 1024 * 1024) { // 50MB
-        toast.error('파일 크기가 너무 큽니다. 50MB 이하의 영상만 업로드 가능합니다.');
+      if (file.size > 100 * 1024 * 1024) { // 100MB로 수정
+        toast.error('파일 크기가 너무 큽니다. 100MB 이하의 영상만 업로드 가능합니다.');
         return;
       }
       // Check video duration
       const isValidDuration = await validateVideoDuration(file);
       if (!isValidDuration) return;
       
-      onFileSelect(file);
+      try {
+        setIsUploading(true);
+        const result = await uploadVideo(file);
+        toast.success('영상이 성공적으로 업로드되었습니다.');
+        console.log('Upload result:', result);
+        setUploadedFile(file);
+        onFileSelect(file, result);
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('영상 업로드 중 오류가 발생했습니다.');
+      } finally {
+        setIsUploading(false);
+      }
     }
     // For music
     else if (type === 'music') {
@@ -217,7 +229,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
               {type === 'image' 
                 ? '이미지 업로드'
                 : type === 'video'
-                  ? '영상 (3초)'
+                  ? '영상 (15초 이하)업로드'
                   : '음악 업로드'
               }
             </div>

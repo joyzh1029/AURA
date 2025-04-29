@@ -58,3 +58,30 @@ export const uploadMultipleImages = async (files: File[]) => {
     throw error;
   }
 };
+
+/**
+ * Upload a video file to the backend
+ * @param file The video file to upload
+ * @returns Response data from the server
+ */
+export const uploadVideo = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/upload-video/`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to upload video');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error uploading video:', error);
+    throw error;
+  }
+};

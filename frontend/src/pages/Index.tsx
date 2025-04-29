@@ -176,7 +176,7 @@ const Index = () => {
                 ) : (
                   <div className="text-center text-muted-foreground">
                     <Upload className="h-10 w-10 mx-auto mb-2" />
-                    <p>이미지나 음악 파일을 업로드하면 결과가 여기에 표시됩니다</p>
+                    <p>이미지나 동영상,음악 파일을 업로드하면 결과가 여기에 표시됩니다</p>
                   </div>
                 )}
               </div>

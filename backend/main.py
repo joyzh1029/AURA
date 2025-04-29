@@ -6,6 +6,8 @@ import shutil
 from typing import List
 import uuid
 import pathlib
+import moviepy.editor as mp
+from tempfile import NamedTemporaryFile
 
 app = FastAPI()
 
@@ -97,6 +99,57 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
             file.file.close()
     
     return result
+
+@app.post("/upload-video/")
+async def upload_video(file: UploadFile = File(...)):
+    """
+    Upload a video file with duration validation (max 15 seconds, max 100MB)
+    """
+    # Validate file is a video
+    if not file.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="File must be a video")
+    
+    # Validate file size (max 100MB)
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Video file size must be 100MB or smaller")
+    
+    # Create a temporary file to check video duration
+    with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
+        shutil.copyfileobj(file.file, temp_file)
+        temp_file_path = temp_file.name
+    
+    try:
+        video = mp.VideoFileClip(temp_file_path)
+        duration = video.duration
+        video.close()
+        
+        if duration > 15:
+            os.unlink(temp_file_path)
+            raise HTTPException(status_code=400, detail="Video must be 15 seconds or shorter")
+        
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        shutil.move(temp_file_path, file_path)
+        
+        return {
+            "filename": unique_filename,
+            "original_filename": file.filename,
+            "content_type": file.content_type,
+            "file_path": file_path,
+            "duration": duration
+        }
+        
+    except Exception as e:
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+    finally:
+        file.file.close()
+
 
 if __name__ == "__main__":
     import uvicorn
