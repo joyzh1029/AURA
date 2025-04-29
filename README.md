@@ -1,1 +1,2 @@
-# AURA_chatbot
+# AURA Chatbot
+이미지랑 음악을 서로 변환하는 RAG 기반 프로그램
