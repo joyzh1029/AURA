@@ -14,26 +14,29 @@ ocr = PaddleOCR(
     use_gpu=False
 )
 
-# 이미지 경로
-image_paths = [
-        r'D:\student\miniproject\Eng\create-a-luxurious-blue-marble-text-effect-5d7ff.jpg',
-        r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry-3.jpg',
-        r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry-4.jpg',
-        r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry.jpg',
-        r'D:\student\miniproject\Eng\fill-text-with-image-photoshop-f-1.jpg',
-        r'D:\student\miniproject\Eng\Fill-Text-with-Image-Tutorial-Image.jpg',
-        r'D:\student\miniproject\Eng\Heart-touching-love-message-to-make-her-cry-1.jpg',
-        r'D:\student\miniproject\Eng\Heart-touching-love-message-to-make-her-cry-3.jpg',
-        r'D:\student\miniproject\Eng\Heartfelt-Love-Messages-For-Her-To-Make-Her-Cry.jpg',
-        r'D:\student\miniproject\Eng\images.jpg',
-        r'D:\student\miniproject\Eng\Love-text-to-make-her-cry.jpg',
-        r'D:\student\miniproject\Eng\modern-professional-text-efeect-design-260nw-2282740589.jpg',
-        r'D:\student\miniproject\Eng\Setting-Up-The-Slide-Text-1000x563.jpg',
-        r'D:\student\miniproject\Eng\simple-3d-editable-text-effect-vector.jpg',
-        r'D:\student\miniproject\Eng\Touching-Love-Messages-For-Her-3.jpg',
-        r'D:\student\miniproject\Eng\Touching-Love-Messages-For-Her-4.jpg',
-        r'D:\student\miniproject\Eng\When-a-man-is-prey-to-his-emotions-he-is-not-his-own-master.-Benedict-de-Spinoza.jpg'
-    ]
+# # 이미지 경로
+# image_paths = [
+#         r'D:\student\miniproject\Eng\create-a-luxurious-blue-marble-text-effect-5d7ff.jpg',
+#         r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry-3.jpg',
+#         r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry-4.jpg',
+#         r'D:\student\miniproject\Eng\Deep-love-messages-for-her-to-make-her-cry.jpg',
+#         r'D:\student\miniproject\Eng\fill-text-with-image-photoshop-f-1.jpg',
+#         r'D:\student\miniproject\Eng\Fill-Text-with-Image-Tutorial-Image.jpg',
+#         r'D:\student\miniproject\Eng\Heart-touching-love-message-to-make-her-cry-1.jpg',
+#         r'D:\student\miniproject\Eng\Heart-touching-love-message-to-make-her-cry-3.jpg',
+#         r'D:\student\miniproject\Eng\Heartfelt-Love-Messages-For-Her-To-Make-Her-Cry.jpg',
+#         r'D:\student\miniproject\Eng\images.jpg',
+#         r'D:\student\miniproject\Eng\Love-text-to-make-her-cry.jpg',
+#         r'D:\student\miniproject\Eng\modern-professional-text-efeect-design-260nw-2282740589.jpg',
+#         r'D:\student\miniproject\Eng\Setting-Up-The-Slide-Text-1000x563.jpg',
+#         r'D:\student\miniproject\Eng\simple-3d-editable-text-effect-vector.jpg',
+#         r'D:\student\miniproject\Eng\Touching-Love-Messages-For-Her-3.jpg',
+#         r'D:\student\miniproject\Eng\Touching-Love-Messages-For-Her-4.jpg',
+#         r'D:\student\miniproject\Eng\When-a-man-is-prey-to-his-emotions-he-is-not-his-own-master.-Benedict-de-Spinoza.jpg'
+#     ]
+
+# 들어온 이미지 
+image_paths = [ ]
 for index, image_path in enumerate(image_paths):
     # 이미지 로드 및 대비 향상
     image = cv2.imread(image_path)
