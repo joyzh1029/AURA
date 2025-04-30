@@ -2,6 +2,7 @@
 이미지랑 음악을 서로 변환하는 RAG 기반 프로그램
 
 -재훈-
+
 AI 감성 자동 뮤직비디오 생성기
 - 입력 비디오 → 프레임 추출 (FrameExtractor)
 - 프레임 해석 (BLIPEmotionAnalyzer)
