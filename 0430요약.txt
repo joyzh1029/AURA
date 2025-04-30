@@ -1,0 +1,51 @@
+-재훈-
+
+AI 감성 자동 뮤직비디오 생성기
+- 입력 비디오 → 프레임 추출 (FrameExtractor)
+- 프레임 해석 (BLIPEmotionAnalyzer)
+- 감성 기반 프롬프트 생성 (LLMPromptRefiner - Gemini 1.5 Pro)
+- 음악 생성 (MusicGenerator - MusicGen-small)
+- 비디오+음악 합성 및 결과 저장
+  
+주요 라이브러리: torch, transformers, google-generativeai, moviepy, soundfile, opencv-python, numpy
+
+주요 모델: BLIP, Gemini 1.5 Pro, MusicGen
+
+주의사항: Torch CUDA 버전 필요, Gemini API Key 준비 필요
+
+
+
+1차 troubleshooting 영상에 어울리는 음악이 제작이 안됨 --> 영상분석 결과로 나온 키워드를 문장으로 연결하여 구체적으로 변환
+
+2차 troubleshooting 영상에서 뽑아낸 키워드가 단지 수치로만 감정을 나타내어(예 : 사람이 있다없다만 판별, 색이 어둡다 밝다 판별) 감성인식이 정확하지 않음.
+ --> 이것을 blip로 대체하여 blip에서 키워드 추출 --> llm의 개입으로 prompt화 --> musicgen
+
+cuda = pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+
+[run_pipeline 함수 기능 요약]
+
+1. 프레임 추출 (frame_extractor.py)
+   - OpenCV를 이용해 일정 간격으로 프레임 추출
+   - 각 프레임을 PIL 이미지로 변환하여 리스트에 저장
+
+2. 감성 자막 생성 (blip_emotion_analyzer.py)
+   - BLIP 모델을 통해 각 프레임에 대한 자막 생성
+   - 생성된 자막들 중 다수결 기반으로 대표 자막 선택
+
+3. 프롬프트 정제 (llm_prompt_refiner.py)
+   - 선택된 자막을 LLM(Gemini API)에 전달하여 음악 생성용 감성 프롬프트 생성
+   - 예: "a hopeful orchestral theme with birds chirping"
+
+4. 음악 생성 (music_generator.py)
+   - HuggingFace의 MusicGen 모델을 사용하여 프롬프트 기반 음악 생성
+   - numpy 배열 형태의 오디오와 샘플링 레이트 반환
+
+5. 음악 저장
+   - soundfile(sf)를 사용하여 생성된 음악을 .wav 파일로 저장
+
+6. 영상+음악 합성
+   - moviepy로 원본 영상과 생성된 음악을 합쳐 .mp4 파일 생성
+   - 영상 길이에 맞춰 음악을 자르거나 맞춤 설정 수행
+
+7. 결과 파일 경로 반환
+   - 합성된 결과 mp4 파일의 경로를 반환하여 FastAPI가 스트리밍 가능하게 함
