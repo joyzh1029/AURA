@@ -29,6 +29,9 @@ pip install -r requirements.txt
 ```
 
 ### 프론트엔드 설치
+- Node.js 설치
+https://nodejs.org/ko
+
 ```bash
 cd frontend
 npm install
