@@ -1,13 +1,17 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 import shutil
-from typing import List
+from typing import List, Dict, Any, Optional
 import uuid
 import pathlib
 import moviepy.editor as mp
 from tempfile import NamedTemporaryFile
+from pydantic import BaseModel
+
+# Import chatbot functionality
+from chatbot import get_chatbot, process_message
 
 app = FastAPI()
 
@@ -33,37 +37,45 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
 def read_root():
-    return {"message": "Image Upload API is running"}
+    return {"message": "AURA API is running"}
 
-@app.post("/upload/")
-async def upload_image(file: UploadFile = File(...)):
+# Chat message model
+class ChatMessage(BaseModel):
+    message: str
+    image_url: Optional[str] = None
+    audio_url: Optional[str] = None
+    video_url: Optional[str] = None
+
+# Initialize chatbot and RAG QA chain
+chatbot, qa_chain = get_chatbot()
+
+@app.post("/chat/")
+async def chat(message: ChatMessage):
     """
-    Upload a single image file
+    Process a chat message using LangChain with Google Gemini
     """
-    # Validate file is an image
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    # Generate a unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save the file
     try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Process the message with LangChain and RAG
+        response = process_message(
+            conversation=chatbot,
+            qa_chain=qa_chain,
+            message=message.message,
+            image_url=message.image_url,
+            video_url=message.video_url,
+            audio_url=message.audio_url
+        )
+        
+        return {
+            "response": response,
+            "status": "success"
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
-    finally:
-        file.file.close()
-    
-    return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "content_type": file.content_type,
-        "file_path": file_path
-    }
+        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
+
+# Utility function to get the full URL for a file
+def get_file_url(filename: str) -> str:
+    base_url = "http://localhost:8001"
+    return f"{base_url}/uploads/{filename}"
 
 @app.post("/upload-multiple/")
 async def upload_multiple_images(files: List[UploadFile] = File(...)):
@@ -91,7 +103,8 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
                 "filename": unique_filename,
                 "original_filename": file.filename,
                 "content_type": file.content_type,
-                "file_path": file_path
+                "file_path": file_path,
+                "url": get_file_url(unique_filename)
             })
         except Exception:
             pass
@@ -100,7 +113,77 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
     
     return result
 
-@app.post("/upload-video/")
+
+
+
+
+
+# Update the upload endpoints to return full URLs
+@app.post("/upload/", response_model=Dict[str, Any])
+async def upload_image(file: UploadFile = File(...)):
+    """
+    Upload a single image file
+    """
+    # Validate file is an image
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Generate a unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    # Save the file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    finally:
+        file.file.close()
+    
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path,
+        "url": get_file_url(unique_filename)
+    }
+
+# Update the upload-audio endpoint to return full URLs
+@app.post("/upload-audio/", response_model=Dict[str, Any])
+async def upload_audio(file: UploadFile = File(...)):
+    """
+    Upload an audio file
+    """
+    # Validate file is an audio
+    if not file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="File must be an audio")
+    
+    # Generate a unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    # Save the file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    finally:
+        file.file.close()
+    
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path,
+        "url": get_file_url(unique_filename)
+    }
+
+# Update the upload-video endpoint to return full URLs
+@app.post("/upload-video/", response_model=Dict[str, Any])
 async def upload_video(file: UploadFile = File(...)):
     """
     Upload a video file with duration validation (max 15 seconds, max 100MB)
@@ -140,6 +223,7 @@ async def upload_video(file: UploadFile = File(...)):
             "original_filename": file.filename,
             "content_type": file.content_type,
             "file_path": file_path,
+            "url": get_file_url(unique_filename),
             "duration": duration
         }
         
@@ -150,36 +234,8 @@ async def upload_video(file: UploadFile = File(...)):
     finally:
         file.file.close()
 
-
-@app.post("/upload-audio/")
-async def upload_audio(file: UploadFile = File(...)):
-    """
-    Upload an audio file
-    """
-    # Validate file is an audio
-    if not file.content_type.startswith("audio/"):
-        raise HTTPException(status_code=400, detail="File must be an audio")
-    
-    # Generate a unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save the file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
-    finally:
-        file.file.close()
-    
-    return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "content_type": file.content_type,
-        "file_path": file_path
-    }
+# Make uploads directory accessible via HTTP
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 if __name__ == "__main__":
     import uvicorn

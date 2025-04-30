@@ -112,3 +112,40 @@ export const uploadAudio = async (file: File) => {
     throw error;
   }
 };
+
+/**
+ * Interface for chat message request
+ */
+interface ChatMessageRequest {
+  message: string;
+  image_url?: string;
+  audio_url?: string;
+  video_url?: string;
+}
+
+/**
+ * Send a chat message to the LangChain-powered backend
+ * @param messageData The message data including text and any media URLs
+ * @returns The AI response
+ */
+export const sendChatMessage = async (messageData: ChatMessageRequest) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messageData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to process chat message');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
+};

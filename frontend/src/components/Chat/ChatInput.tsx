@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Mic, MicOff, Send, Image as ImageIcon, Music } from 'lucide-react';
 import ImagePreview from '@/components/ImagePreview/ImagePreview';
+import { sendChatMessage } from '@/services/api';
 
 const ChatInput = () => {
-  const { addMessage, isLoading, setIsLoading, uploadedImage, uploadedVideo, uploadedMusic, setUploadedImage, setUploadedVideo } = useChat();
+  const { addMessage, isLoading, setIsLoading, uploadedImage, uploadedVideo, uploadedMusic, setUploadedImage, setUploadedVideo, setUploadedMusic } = useChat();
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,6 +27,11 @@ const ChatInput = () => {
       sender: 'user',
     });
 
+    // Track media URLs to send to the backend
+    let imageUrl = null;
+    let audioUrl = null;
+    let videoUrl = null;
+
     if (uploadedImage) {
       addMessage({
         content: '',
@@ -33,6 +39,7 @@ const ChatInput = () => {
         sender: 'user',
         attachmentUrl: uploadedImage,
       });
+      imageUrl = uploadedImage;
     }
 
     if (uploadedVideo) {
@@ -42,6 +49,7 @@ const ChatInput = () => {
         sender: 'user',
         attachmentUrl: uploadedVideo,
       });
+      videoUrl = uploadedVideo;
     }
 
     if (uploadedMusic) {
@@ -51,16 +59,23 @@ const ChatInput = () => {
         sender: 'user',
         attachmentUrl: uploadedMusic,
       });
+      audioUrl = uploadedMusic;
     }
 
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Send message to LangChain-powered backend
+      const response = await sendChatMessage({
+        message: messageText,
+        image_url: imageUrl,
+        audio_url: audioUrl,
+        video_url: videoUrl
+      });
       
+      // Add bot response
       addMessage({
-        content: '이미지를 분석했습니다. 감성적이고 차분한 분위기가 느껴지네요. 이와 어울리는 음악을 추천해 드립니다.',
+        content: response.response,
         type: 'text',
         sender: 'bot',
       });
@@ -75,6 +90,7 @@ const ChatInput = () => {
       setIsLoading(false);
       setUploadedImage(null);
       setUploadedVideo(null);
+      setUploadedMusic(null);
     }
   };
 
