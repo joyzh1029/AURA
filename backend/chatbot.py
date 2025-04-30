@@ -4,11 +4,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
-import random
 import glob
-from moviepy.editor import VideoFileClip  
-import speech_recognition as sr  
-import tempfile  
 
 # RAG 관련 임포트
 from langchain_community.document_loaders import TextLoader
@@ -29,40 +25,58 @@ KNOWLEDGE_BASE_DIR = "knowledge_base"
 # 벡터 저장소 초기화 함수
 def initialize_vector_store():
     """지식 베이스 문서를 로드하고 벡터 저장소를 초기화합니다."""
-    # 지식 베이스 디렉토리가 존재하는지 확인
-    if not os.path.exists(KNOWLEDGE_BASE_DIR):
-        os.makedirs(KNOWLEDGE_BASE_DIR)
-    
-    # 지식 베이스 파일 로드
-    documents = []
-    for file_path in glob.glob(f"{KNOWLEDGE_BASE_DIR}/*.txt"):
-        loader = TextLoader(file_path)
-        documents.extend(loader.load())
-    
-    # 문서가 없으면 빈 벡터 저장소 반환
-    if not documents:
+    try:
+        # 지식 베이스 디렉토리가 존재하는지 확인
+        if not os.path.exists(KNOWLEDGE_BASE_DIR):
+            os.makedirs(KNOWLEDGE_BASE_DIR)
+            print(f"Created directory: {KNOWLEDGE_BASE_DIR}")
+        
+        # 지식 베이스 파일 로드
+        documents = []
+        print(f"Looking for files in: {os.path.abspath(KNOWLEDGE_BASE_DIR)}")
+        
+        file_paths = glob.glob(f"{KNOWLEDGE_BASE_DIR}/*.txt")
+        print(f"Found {len(file_paths)} files: {file_paths}")
+        
+        for file_path in file_paths:
+            try:
+                print(f"Loading file: {file_path}")
+                # 파일 엔코딩 명시적 지정
+                loader = TextLoader(file_path, encoding='utf-8')
+                documents.extend(loader.load())
+                print(f"Successfully loaded: {file_path}")
+            except Exception as e:
+                print(f"Error loading file {file_path}: {str(e)}")
+                continue
+        
+        # 문서가 없으면 빈 벡터 저장소 반환
+        if not documents:
+            print("No documents loaded from knowledge base.")
+            return None
+        
+        print(f"Loaded {len(documents)} documents.")
+        
+        # 문서 분할
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+        texts = text_splitter.split_documents(documents)
+        print(f"Split into {len(texts)} text chunks.")
+        
+        # 임베딩 모델 초기화
+        embeddings = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="embedding-001")
+        
+        # 벡터 저장소 생성
+        vector_store = FAISS.from_documents(texts, embeddings)
+        print("Vector store created successfully.")
+        
+        return vector_store
+    except Exception as e:
+        print(f"Error in initialize_vector_store: {str(e)}")
+        # 오류 발생 시 빈 벡터 저장소 반환
         return None
-    
-    # 문서 분할
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    texts = text_splitter.split_documents(documents)
-    
-    # 임베딩 모델 초기화
-    embeddings = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="embedding-001")
-    
-    # 벡터 저장소 생성
-    vector_store = FAISS.from_documents(texts, embeddings)
-    
-    return vector_store
 
 # 커스텀 프롬프트 템플릿 정의
 template = """당신은 AURA, 이미지，영상과 오디오를 분석할 수 있는 AI 어시스턴트입니다.
 당신은 이미지나 영상을 업로드하면 음악을 생성해 드리고, 음악을 업로드하면 이미지를 생성해 드립니다.
-
-사용자가 처음 인사하거나 '안녕'과 같은 간단한 인사를 하면 다음 인사말 중 하나를 무작위로 선택하여 답변하세요:
-1. "안녕하세요! AURA입니다. 이미지나 영상을 업로드하면 음악을 생성해 드리고, 음악을 업로드하면 이미지를 생성해 드립니다. 무엇을 도와드릴까요?"
-2. "안녕하세요! AURA 서비스에 오신 것을 환영합니다. 이미지나 영상을 음악으로, 음악을 이미지로 변환해 드립니다. 무엇을 도와드릴까요?"
-3. "환영합니다! 저는 AURA입니다. 이미지나 영상을 업로드하시면 음악을, 음악을 업로드하시면 이미지를 생성해 드립니다. 어떤 서비스를 이용하고 싶으신가요?"
 
 사용자가 사용하는 언어에 따라 한국어, 중국어 또는 영어로 답변합니다. 중국어로 질문하면 중국어로, 한국어로 질문하면 한국어로 답변합니다. 각 언어에 맞게 인사말의 변형을 만들어 사용하세요.
 
@@ -152,7 +166,7 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
     greeting_keywords = ['안녕', '你好', 'hello', 'hi', '반가워', '안녕하세요', '嗨', '哈喽']
     
     # 사용자 메시지가 간단한 인사말인지 확인
-    is_simple_greeting = any(keyword in message.lower() for keyword in greeting_keywords) and len(message) < 15
+    is_simple_greeting = any(keyword in message.lower() for keyword in greeting_keywords) and len(message) < 20
     
     if is_simple_greeting and qa_chain:
         # 언어 감지
@@ -160,12 +174,13 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
         
         if any(keyword in message for keyword in ['你好', '嗨', '哈喽']):
             detected_language = "chinese"
-            query = "关于AURA服务的介绍"
+            query = "关于AURA服务的介绍和功能说明"
         elif any(keyword in message for keyword in ['hello', 'hi']):
             detected_language = "english"
-            query = "introduction about AURA service"
+            query = "Introduction and features of AURA service"
         else:
-            query = "AURA 서비스에 대한 소개"
+            detected_language = "korean"
+            query = "AURA 서비스의 소개와 기능 설명"
         
         try:
             # RAG를 사용하여 지식 베이스에서 정보 검색
@@ -174,9 +189,14 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
             
             # Gemini를 사용하여 검색된 정보를 재구성
             rewrite_prompt = f"""
-            다음 정보를 기반으로 사용자에게 응답해주세요. 응답은 자연스럽고 친절해야 합니다.
+            다음 정보를 기반으로 사용자에게 매우 간결하고 정확한 응답을 제공해주세요.
             사용자 질문: {message}
             검색된 정보: {raw_response}
+            
+            중요 지침:
+            1. 응답은 반드시 2-3줄 이내로 제한해야 합니다.
+            2. 정보의 핵심만 포함하고 불필요한 설명은 제외하세요.
+            3. 응답은 자연스럽고 친절해야 합니다.
             
             응답은 다음 언어로 작성해주세요: {detected_language}
             """
@@ -185,12 +205,25 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
             llm = ChatGoogleGenerativeAI(
                 model="gemini-1.5-pro",
                 google_api_key=GOOGLE_API_KEY,
-                temperature=0.7
+                temperature=0.3,
+                max_output_tokens=150
             )
             final_response = llm.invoke(rewrite_prompt).content
-            return final_response
-        except Exception as e:
-            # RAG 오류 발생 시 기본 인사말 사용
+            
+            # 후처리: 응답 길이 제한
+            if detected_language == "chinese":
+                # 중국어 응답의 경우 문장 수 제한
+                sentences = final_response.split('。')  # 중국어 문장 구분자
+                if len(sentences) > 2:
+                    # 처음 2개 문장만 유지하고 마지막에 문장 구분자 추가
+                    final_response = '。'.join(sentences[:2]) + '。'
+                
+                # 추가 길이 제한 (최대 100자)
+                if len(final_response) > 100:
+                    final_response = final_response[:97] + '...'
+            
+            return final_response            
+        except Exception as e:      
             print(f"RAG 오류 발생: {str(e)}")
             # 언어에 따른 기본 인사말 사용
             if detected_language == "chinese":

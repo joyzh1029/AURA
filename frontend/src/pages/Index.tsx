@@ -212,6 +212,11 @@ const FileUploadHandler = () => {
             </div>
           </div>
         </main>
+        
+        {/* footer */}
+        <footer className="py-4 text-center text-sm text-muted-foreground border-t mt-auto">
+          <p>© 2025 AURA. 이미지,영상과 음악의 교차점.</p>
+        </footer>
       </div>
     </ChatProvider>
   );
