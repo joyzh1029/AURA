@@ -42,7 +42,7 @@ npm install
 ### 백엔드 서버 실행
 ```bash
 cd backend
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app 
 ```
 
 ### 프론트엔드 개발 서버 실행
