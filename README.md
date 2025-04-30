@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 # AURA
+<<<<<<< HEAD
 이미지랑 음악을 서로 변환하는 RAG 기반 프로그램
 
 -재훈-
@@ -122,3 +123,5 @@ AURA2/
     └── package.json
 ```
 >>>>>>> origin/zhouying
+=======
+>>>>>>> 4ff284a17ad7935b100ea0fc0cbb3c6d75ed67ba
