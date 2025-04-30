@@ -8,11 +8,28 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      "/upload": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/upload-video": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/upload-multiple": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      "/upload-audio": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {

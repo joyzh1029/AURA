@@ -37,7 +37,7 @@ export const uploadImage = async (file: File) => {
 export const uploadMultipleImages = async (files: File[]) => {
   try {
     const formData = new FormData();
-    
+
     files.forEach((file) => {
       formData.append('files', file);
     });
@@ -60,11 +60,11 @@ export const uploadMultipleImages = async (files: File[]) => {
 };
 
 /**
- * Upload a video file to the backend
+ * Upload a video file to the backend and return the result as a Blob
  * @param file The video file to upload
- * @returns Response data from the server
+ * @returns Blob data of generated video
  */
-export const uploadVideo = async (file: File) => {
+export const uploadVideo = async (file: File): Promise<Blob> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -75,11 +75,11 @@ export const uploadVideo = async (file: File) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to upload video');
+      const errorText = await response.text();
+      throw new Error(errorText || 'Failed to upload video');
     }
 
-    return await response.json();
+    return await response.blob();
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;

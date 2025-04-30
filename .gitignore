@@ -1,4 +1,4 @@
-# Python 기본 캐시 제거
+# Python
 __pycache__/
 *.py[cod]
 *.so
@@ -8,33 +8,28 @@ __pycache__/
 env/
 *.env
 
-# OS별 캐시 파일
+# 시스템 파일
 .DS_Store
 Thumbs.db
 
-# Jupyter (사용하는 경우)
+# Jupyter
 .ipynb_checkpoints/
 
-# 로그 / DB / 기타
+# 로그/DB
 *.log
 *.sqlite3
 
-# API 키 / 보안 파일
-keys/gemini_api_key.txt
-
-# 모델/캐시 파일
-~/.cache/
+# 모델/임시 미디어
 *.pt
 *.bin
 *.pth
-torch_model/
-
-# 생성된 미디어 결과물
-video/
-music/
-mv_result/
 *.wav
 *.mp4
+*.avi
+*.tmp
+
+# 보안 키
+keys/
 
 # IDE 설정
 .vscode/
@@ -42,3 +37,4 @@ mv_result/
 
 # 기타
 pip-log.txt
+

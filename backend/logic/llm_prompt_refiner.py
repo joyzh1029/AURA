@@ -11,7 +11,7 @@ class LLMPromptRefiner:
         else:
             # keys 폴더 안에 gemini_api_key.txt 파일 읽기
             base_dir = os.path.dirname(__file__)
-            key_path = os.path.join(base_dir, "keys", "gemini_api_key.txt")
+            key_path = os.path.join(base_dir, "..", "keys", "gemini_api_key.txt")
             if not os.path.exists(key_path):
                 raise FileNotFoundError("Gemini API 키 파일을 찾을 수 없습니다: keys/gemini_api_key.txt")
 
