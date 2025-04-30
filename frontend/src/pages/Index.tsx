@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { ChatProvider } from '@/contexts/ChatContext';
+import { ChatProvider, useChat } from '@/contexts/ChatContext';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import { Sparkles, Music, Image as ImageIcon, Video, Upload, RefreshCw } from 'lucide-react';
 import FileUploader from '@/components/FileUpload/FileUploader';
 import { Button } from '@/components/ui/button';
 
+// Main component
 const Index = () => {
+  return (
+    <ChatProvider>
+      <FileUploadHandler />
+    </ChatProvider>
+  );
+};
+
+// Internal component for file upload handling.
+const FileUploadHandler = () => {
+  const { setUploadedImage, setUploadedVideo, setUploadedMusic } = useChat();
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<any | null>(null);
   const [resetTrigger, setResetTrigger] = useState(0);
+  
+  // Track if any file has been uploaded, used to disable other uploaders
+  const hasFileUploaded = selectedImageFile !== null || selectedVideoFile !== null || selectedMusicFile !== null;
   
   // Function to reset all selections
   const resetAll = () => {
@@ -19,6 +33,9 @@ const Index = () => {
     setSelectedMusicFile(null);
     setUploadResult(null);
     setResetTrigger(prev => prev + 1);
+    setUploadedImage(null);
+    setUploadedVideo(null);
+    setUploadedMusic(null);
   };
   return (
     <ChatProvider>
@@ -84,14 +101,22 @@ const Index = () => {
                             console.log('Image file selected', file, result);
                           }}
                           resetTrigger={resetTrigger}
+                          disabled={hasFileUploaded && !selectedImageFile}
                         />
                         <FileUploader 
                           type="video"
-                          onFileSelect={(file) => {
+                          onFileSelect={(file, result) => {
                             setSelectedVideoFile(file);
-                            console.log('Video file selected', file);
+                            if (result && result.file_url) {
+                              setUploadedVideo(result.file_url);
+                            } else if (file) {
+                              // If no URL is returned, use the local URL
+                              setUploadedVideo(URL.createObjectURL(file));
+                            }
+                            console.log('Video file selected', file, result);
                           }}
                           resetTrigger={resetTrigger}
+                          disabled={hasFileUploaded && !selectedVideoFile}
                         />
                       </div>
                     </div>
@@ -112,9 +137,13 @@ const Index = () => {
                         type="music"
                         onFileSelect={(file) => {
                           setSelectedMusicFile(file);
+                          if (file) {
+                            setUploadedMusic(URL.createObjectURL(file));
+                          }
                           console.log('Music file selected', file);
                         }}
                         resetTrigger={resetTrigger}
+                        disabled={hasFileUploaded && !selectedMusicFile}
                       />
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 // API service for handling backend requests
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8001';
 
 /**
  * Upload a single image file to the backend
@@ -82,6 +82,33 @@ export const uploadVideo = async (file: File) => {
     return await response.json();
   } catch (error) {
     console.error('Error uploading video:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload an audio file to the backend
+ * @param file The audio file to upload
+ * @returns Response data from the server
+ */
+export const uploadAudio = async (file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/upload-audio/`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to upload audio');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error uploading audio:', error);
     throw error;
   }
 };

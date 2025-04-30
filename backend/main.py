@@ -151,6 +151,36 @@ async def upload_video(file: UploadFile = File(...)):
         file.file.close()
 
 
+@app.post("/upload-audio/")
+async def upload_audio(file: UploadFile = File(...)):
+    """
+    Upload an audio file
+    """
+    # Validate file is an audio
+    if not file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="File must be an audio")
+    
+    # Generate a unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    # Save the file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    finally:
+        file.file.close()
+    
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path
+    }
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

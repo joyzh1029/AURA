@@ -30,6 +30,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
         );
       
+      case 'video':
+        return (
+          <div className="my-2">
+            {message.attachmentUrl && (
+              <video 
+                controls 
+                className="w-full rounded-md max-h-[300px] object-contain bg-black"
+                src={message.attachmentUrl}
+              />
+            )}
+            {message.content && (
+              <p className="text-sm mt-2">{message.content}</p>
+            )}
+          </div>
+        );
+      
       case 'music':
         if (message.metadata?.musicData) {
           const { title, artist, coverImageUrl, audioUrl } = message.metadata.musicData;

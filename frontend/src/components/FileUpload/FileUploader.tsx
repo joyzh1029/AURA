@@ -3,15 +3,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, Music, Video, Loader2 } from 'lucide-react';
 import { useChat } from '@/contexts/ChatContext';
-import { uploadImage, uploadVideo } from '@/services/api';
+import { uploadImage, uploadVideo, uploadAudio } from '@/services/api';
 
 interface FileUploaderProps {
   type: 'image' | 'video' | 'music';
   onFileSelect: (file: File, uploadResult?: any) => void;
   resetTrigger?: number; // A prop that changes to trigger a reset
+  disabled?: boolean; // Whether to disable the upload function
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTrigger = 0 }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTrigger = 0, disabled = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -113,19 +114,31 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
         setIsUploading(false);
       }
     }
-    // For music
+    // For music/audio
     else if (type === 'music') {
-      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg'];
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
       if (!validTypes.includes(file.type)) {
-        toast.error('지원하지 않는 음악 형식입니다. MP3, WAV, OGG 형식만 지원합니다.');
+        toast.error('지원하지 않는 음악 형식입니다. MP3, WAV, OGG, M4A 형식만 지원합니다.');
         return;
       }
-      if (file.size > 20 * 1024 * 1024) { // 20MB
-        toast.error('파일 크기가 너무 큽니다. 20MB 이하의 음악 파일만 업로드 가능합니다.');
+      if (file.size > 50 * 1024 * 1024) { // 50MB
+        toast.error('파일 크기가 너무 큽니다. 50MB 이하의 음악만 업로드 가능합니다.');
         return;
       }
       
-      onFileSelect(file);
+      try {
+        setIsUploading(true);
+        const result = await uploadAudio(file);
+        toast.success('음악이 성공적으로 업로드되었습니다.');
+        console.log('Upload result:', result);
+        setUploadedFile(file);
+        onFileSelect(file, result);
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('음악 업로드 중 오류가 발생했습니다.');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -155,15 +168,17 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
 
   return (
     <div
-      className={`border-2 border-dashed p-2 rounded-xl transition-all ${isUploading ? 'cursor-wait' : 'cursor-pointer'} flex flex-col items-center justify-center h-full max-h-full overflow-hidden w-full ${
-        isDragging 
+      className={`border-2 border-dashed p-2 rounded-xl transition-all ${isUploading ? 'cursor-wait' : disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} flex flex-col items-center justify-center h-full max-h-full overflow-hidden w-full ${
+        isDragging && !disabled
           ? 'border-primary bg-primary/10' 
-          : 'border-muted hover:border-primary/50 hover:bg-muted/50'
+          : disabled
+            ? 'border-muted'
+            : 'border-muted hover:border-primary/50 hover:bg-muted/50'
       }`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={isUploading || uploadedFile ? undefined : triggerFileInput}
+      onDragOver={disabled ? undefined : handleDragOver}
+      onDragLeave={disabled ? undefined : handleDragLeave}
+      onDrop={disabled ? undefined : handleDrop}
+      onClick={disabled || isUploading || uploadedFile ? undefined : triggerFileInput}
     >
       <input
         type="file"
@@ -177,7 +192,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
               ? 'video/*'
               : 'audio/*'
         }
-        disabled={isLoading || isUploading}
+        disabled={disabled || isLoading || isUploading}
       />
       
       <div className="flex flex-col items-center justify-center text-center gap-1 py-1 max-h-full overflow-hidden">
@@ -226,12 +241,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
               <Music className="h-4 w-4 text-muted-foreground" />
             )}
             <div className="text-xs font-medium">
-              {type === 'image' 
-                ? '이미지 업로드'
-                : type === 'video'
-                  ? '영상 (15초 이하)업로드'
-                  : '음악 업로드'
-              }
+              {disabled ? (
+                <span className="text-red-500">
+                  {type === 'image' 
+                    ? '이미지 업로드 불가 (초기화 필요)'
+                    : type === 'video'
+                      ? '영상 업로드 불가 (초기화 필요)'
+                      : '음악 업로드 불가 (초기화 필요)'
+                  }
+                </span>
+              ) : (
+                type === 'image' 
+                  ? '이미지 업로드'
+                  : type === 'video'
+                    ? '영상 (15초 이하)업로드'
+                    : '음악 업로드'
+              )}
             </div>
           </>
         )}

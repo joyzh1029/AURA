@@ -7,14 +7,14 @@ import { Mic, MicOff, Send, Image as ImageIcon, Music } from 'lucide-react';
 import ImagePreview from '@/components/ImagePreview/ImagePreview';
 
 const ChatInput = () => {
-  const { addMessage, isLoading, setIsLoading, uploadedImage, uploadedMusic, setUploadedImage } = useChat();
+  const { addMessage, isLoading, setIsLoading, uploadedImage, uploadedVideo, uploadedMusic, setUploadedImage, setUploadedVideo } = useChat();
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() && !uploadedImage && !uploadedMusic) return;
+    if (!inputValue.trim() && !uploadedImage && !uploadedVideo && !uploadedMusic) return;
 
     const messageText = inputValue;
     setInputValue('');
@@ -32,6 +32,15 @@ const ChatInput = () => {
         type: 'image',
         sender: 'user',
         attachmentUrl: uploadedImage,
+      });
+    }
+
+    if (uploadedVideo) {
+      addMessage({
+        content: '',
+        type: 'video',
+        sender: 'user',
+        attachmentUrl: uploadedVideo,
       });
     }
 
@@ -65,6 +74,7 @@ const ChatInput = () => {
     } finally {
       setIsLoading(false);
       setUploadedImage(null);
+      setUploadedVideo(null);
     }
   };
 

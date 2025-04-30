@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
-export type MessageType = 'text' | 'image' | 'music' | 'system';
+export type MessageType = 'text' | 'image' | 'video' | 'music' | 'system';
 
 export interface Message {
   id: string;
@@ -19,6 +19,8 @@ interface ChatContextProps {
   setIsLoading: (loading: boolean) => void;
   uploadedImage: string | null;
   setUploadedImage: (image: string | null) => void;
+  uploadedVideo: string | null;
+  setUploadedVideo: (video: string | null) => void;
   uploadedMusic: string | null;
   setUploadedMusic: (music: string | null) => void;
   generatedImage: string | null;
@@ -43,6 +45,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
   const [uploadedMusic, setUploadedMusic] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -66,6 +69,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       },
     ]);
     setUploadedImage(null);
+    setUploadedVideo(null);
     setUploadedMusic(null);
     setGeneratedImage(null);
   };
@@ -79,6 +83,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsLoading,
         uploadedImage,
         setUploadedImage,
+        uploadedVideo,
+        setUploadedVideo,
         uploadedMusic,
         setUploadedMusic,
         generatedImage,
