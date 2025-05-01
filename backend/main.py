@@ -37,7 +37,7 @@ app.add_middleware(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Create directory for audio outputs
+# Create directory for audio outputs *hwaseop*
 AUDIO_DIR = "audio_outputs"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
@@ -85,7 +85,7 @@ async def chat(message: ChatMessage):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
 
-# Utility function to get the full URL for a file
+# Utility function to get the full URL for a file *hwaseop*
 def get_file_url(filename: str, directory: str = UPLOAD_DIR) -> str:
     base_url = "http://localhost:8001"
     relative_path = directory.replace("\\", "/").split("/")[-1]
@@ -294,7 +294,7 @@ async def upload_video(file: UploadFile = File(...)):
 # Make uploads directory accessible via HTTP
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# Make audio outputs directory accessible via HTTP
+# Make audio outputs directory accessible via HTTP *hwaseop*
 app.mount("/audio_outputs", StaticFiles(directory=AUDIO_DIR), name="audio_outputs")
 
 if __name__ == "__main__":
