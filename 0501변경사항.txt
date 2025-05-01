@@ -1,4 +1,4 @@
-전체 코드 변경 요약 (GitHub `jaehoon` 브랜치 vs 현재 작업본)
+전체 코드 변경 요약
 
 1. main.py
 - upload_video() 내에서 .mp4 삭제 시 PermissionError를 방지하기 위한 안전 처리 도입
