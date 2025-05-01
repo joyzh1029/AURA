@@ -24,6 +24,14 @@
 
 requirements.txt 참조
 
+### 환경 구축
+environment.yml를 다운로드,
+받은 environment.yml 파일이 있는 디렉터리로 이동한 후, 아래 명령을 실행:
+conda env create -f environment.yml
+
+conda activate audiocraft-env
+
+
 ### 프로젝트 구조
 ```
 project/
