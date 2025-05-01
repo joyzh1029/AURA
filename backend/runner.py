@@ -63,10 +63,10 @@ def run_pipeline(video_path: str, output_dir: str) -> str:
     # [6단계] 비디오+음악 합성
     combine_video_audio(video_path, music_path, temp_result_path)
     
-    # [7단계] 将处理后的视频复制到永久存储目录
+    # [7단계] 영상 결과를 영구적으로 저장
     import shutil
     shutil.copy2(temp_result_path, final_result_path)
-    print(f"视频已保存到: {final_result_path}")
+    print(f"영상 결과를 영구적으로 저장: {final_result_path}")
     
-    # 返回两个路径，临时路径用于立即显示，永久路径用于存储
+    # 반환
     return temp_result_path, final_result_path

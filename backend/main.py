@@ -1,8 +1,11 @@
+# 환경변수 설정 - OpenMP 충돌 해결
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
-import os
 import shutil
 from typing import List, Dict, Any, Optional
 import uuid
