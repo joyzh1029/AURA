@@ -23,6 +23,26 @@
 5. music_generator.py
 - cuda 사용유도로 속도 향상
 - transformers 기반 MusicgenForConditionalGeneration → audiocraft MusicGen으로 모델 변경
+    📌 Musicgen 비교 요약 (Transformers vs Audiocraft)
+
+    [1] MusicgenForConditionalGeneration (🤗 Hugging Face)
+    - 설치: pip install transformers
+    - 불러오기: from transformers import MusicgenForConditionalGeneration
+    - 장점: 사용 간편, Hugging Face pipeline 호환
+    - 단점: 기능 제한 (duration 설정, 채널 조정, 고급 sampling 불가)
+    - 용도: 간단한 테스트, 빠른 프로토타입
+
+    [2] audiocraft.models.MusicGen (🎧 Meta 공식)
+    - 설치: pip install audiocraft
+    - 불러오기: from audiocraft.models import MusicGen
+    - 장점: Meta 원본 기능 100% 제공, 고급 설정 가능 (sampling, duration, stereo 등)
+    - 단점: transformers pipeline과는 별도로 사용
+    - 용도: 실전 서비스, 커스터마이즈된 음악 생성
+
+    ✅ 요약:
+    - 간단한 실험 = Hugging Face 버전
+    - 실전 성능과 제어 필요 = Meta Audiocraft 버전
+
 - 오디오 생성 방식 변경: 반환 대신 .wav 파일 직접 저장
 - stereo → mono 변환, float → int16 클리핑 처리로 호환성 확보
 - wav_write 저장 중 오류 방지를 위한 안전 변환 포함
