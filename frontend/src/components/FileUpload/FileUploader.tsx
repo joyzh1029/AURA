@@ -36,8 +36,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
-        if (video.duration > 15) {
-          toast.error('영상은 15초 이하만 업로드 가능합니다.');
+        if (video.duration > 20) {
+          toast.error('영상은 20초 이하만 업로드 가능합니다.');
           resolve(false);
         } else {
           resolve(true);
