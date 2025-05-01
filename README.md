@@ -1,46 +1,98 @@
-# AURA
-## 이미지를 음악으로 변환하는 모듈
+# AURA Chatbot
 
-## Image-to-Music
+이미지와 음악을 서로 변환하는 RAG 기반 프로그램
 
-**Image-to-Music**는 선택한 이미지에서 캡션(설명)을 생성하고, 이를 바탕으로 이미지의 분위기와 테마에 어울리는 음악을 AI를 통해 생성하는 파이프라인입니다. 이 프로젝트는 이미지 캡션 모델, 테마 분석 및 프롬프트 생성, 그리고 MusicGen 기반 음악 생성 모델을 통합하여, 사용자가 선택한 이미지에 맞는 음악을 자동으로 생성합니다.
+## 프로젝트 소개
+
+AURA는 이미지와 음악을 상호 변환할 수 있는 혁신적인 AI 챗봇입니다. RAG(Retrieval-Augmented Generation) 기술을 기반으로 하여 사용자가 업로드한 이미지나 음악을 분석하고 변환합니다.
+
+## 시스템 요구사항
+
+### 백엔드
+- Python 3.10 이상
+- FastAPI
+- uvicorn
+- 기타 필요한 Python 패키지
+
+### 프론트엔드
+- Node.js
+- React
+- Vite
+- TypeScript
+
+## 설치 방법
+
+### 백엔드 설치
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### 프론트엔드 설치
+- Node.js 설치
+https://nodejs.org/ko
+
+```bash
+cd frontend
+npm install
+```
+
+## 실행 방법
+
+### 백엔드 서버 실행
+```bash
+cd backend
+python main.py
+```
+
+### 프론트엔드 개발 서버 실행
+```bash
+cd frontend
+npm run dev
+```
 
 ## 주요 기능
 
-- **이미지 캡션 생성:**  
-  BLIP 모델을 사용하여 입력 이미지에서 자연어 설명(캡션)을 생성합니다.
-  
-- **테마 분석 및 프롬프트 생성:**  
-  NLP 기법과 제로샷 분류, 임베딩 기반 순위 결정을 활용해 캡션에서 감정, 장르, 스타일, 악기 등을 분석하고, 이를 기반으로 작곡에 대한 구체적인 텍스트 프롬프트를 생성합니다.
-  
-- **음악 생성:**  
-  MusicGen 모델을 활용해 생성된 프롬프트를 바탕으로 구조적이며 감성적인 음악을 만듭니다.
-  
-- **사용자 인터페이스:**  
-  기본적인 GUI 기능(파일, 디렉토리 선택 및 파일명 입력)을 제공하여 사용자가 쉽게 프로젝트를 이용할 수 있습니다.
+1. 이미지 업로드
+   - 단일 이미지 업로드
+   - 다중 이미지 업로드 지원
+   - 이미지 미리보기
 
+2. 음악 변환
+   - 이미지에서 음악으로 변환
+   - 음악 재생 기능
 
-### 시스템 요구사항
+3. 대화형 인터페이스
+   - 직관적인 채팅 인터페이스
+   - 실시간 응답
 
-requirements.txt 참조
+## 기술 스택
 
-### 환경 구축
-environment.yml를 다운로드,
-받은 environment.yml 파일이 있는 디렉터리로 이동한 후, 아래 명령을 실행:
-conda env create -f environment.yml
+### 백엔드
+- FastAPI
+- Python
+- uvicorn
 
-conda activate audiocraft-env
+### 프론트엔드
+- React
+- TypeScript
+- Vite
+- Shadcn UI
+- TanStack Query
 
+## 프로젝트 구조
 
-### 프로젝트 구조
 ```
-project/
-├── main.py                 # 전체 파이프라인 실행 및 메인 엔트리 포인트
-├── setup.py                # 환경 설정 및 공통 라이브러리/모델 초기화 코드
-├── requirements.txt        # 프로젝트 의존성 목록
-├── gui.py                  # 파일/디렉토리 선택 등 사용자 인터페이스 (GUI) 기능
-├── image_captioning.py     # 이미지 캡션 생성을 위한 코드 (예: BLIP 모델)
-├── music_generation.py     # 텍스트 프롬프트 기반 음악 생성 코드 (예: MusicGen)
-└── theme_analyzer.py       # 캡션 분석, 테마 결정 및 프롬프트 생성 로직 (NLP 및 AI 활용)
-
+AURA2/
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   └── uploads/
+└── frontend/
+    ├── src/
+    │   ├── components/
+    │   ├── pages/
+    │   └── App.tsx
+    ├── public/
+    └── package.json
 ```

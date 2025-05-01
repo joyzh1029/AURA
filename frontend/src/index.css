@@ -1,0 +1,174 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 250 100% 99%;
+    --foreground: 252, 6%, 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 252, 6%, 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 252, 6%, 15%;
+
+    --primary: 271 91% 45%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 270 67% 98%;
+    --secondary-foreground: 272 45% 40%;
+
+    --muted: 268 70% 95%;
+    --muted-foreground: 270 20% 40%;
+
+    --accent: 268 70% 95%;
+    --accent-foreground: 272 45% 40%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 270 20% 92%;
+    --input: 270 20% 92%;
+    --ring: 271 91% 45%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 270 67% 98%;
+    --sidebar-foreground: 252, 6%, 15%;
+    --sidebar-primary: 271 91% 45%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 268 70% 95%;
+    --sidebar-accent-foreground: 272 45% 40%;
+    --sidebar-border: 270 20% 92%;
+    --sidebar-ring: 271 91% 45%;
+  }
+
+  .dark {
+    --background: 252 35% 10%;
+    --foreground: 256 40% 92%;
+
+    --card: 252 35% 12%;
+    --card-foreground: 256 40% 92%;
+
+    --popover: 252 35% 12%;
+    --popover-foreground: 256 40% 92%;
+
+    --primary: 271 91% 65%;
+    --primary-foreground: 256 40% 98%;
+
+    --secondary: 252 35% 18%;
+    --secondary-foreground: 256 40% 92%;
+
+    --muted: 252 35% 18%;
+    --muted-foreground: 256 40% 65%;
+
+    --accent: 252 35% 18%;
+    --accent-foreground: 256 40% 92%;
+
+    --destructive: 0 62.8% 60.6%;
+    --destructive-foreground: 256 40% 98%;
+
+    --border: 252 35% 20%;
+    --input: 252 35% 20%;
+    --ring: 271 91% 65%;
+    
+    --sidebar-background: 252 35% 15%;
+    --sidebar-foreground: 256 40% 92%;
+    --sidebar-primary: 271 91% 65%;
+    --sidebar-primary-foreground: 256 40% 98%;
+    --sidebar-accent: 252 35% 20%;
+    --sidebar-accent-foreground: 256 40% 92%;
+    --sidebar-border: 252 35% 25%;
+    --sidebar-ring: 271 91% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom scroll bar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+  opacity: 0.8;
+}
+
+/* Wave animations for music visualization */
+.wave-animation {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(168, 85, 247, 0.4) 0%, rgba(168, 85, 247, 0) 70%);
+  transform-origin: center;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.wave-1 {
+  animation: waves 2s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.wave-2 {
+  animation: waves 2s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+.wave-3 {
+  animation: waves 2s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+.audio-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  gap: 3px;
+}
+
+.audio-wave-bar {
+  width: 3px;
+  height: 100%;
+  background-color: hsl(var(--primary));
+  border-radius: 3px;
+  transform: scaleY(0.3);
+  animation: sound 1.2s ease-in-out infinite;
+}
+
+@keyframes sound {
+  0% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0.3);
+  }
+}
