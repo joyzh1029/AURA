@@ -65,18 +65,31 @@ const FileUploadHandler = () => {
             {/* Right side: Operation area */}
             <div className="col-span-1 h-[700px] flex flex-col justify-between">
               <div className="space-y-6">
-                {/* Upper section with wave animation */}
+                {/* Upper section with wave animation or processed video */}
                 <div className="relative h-[160px] rounded-xl overflow-hidden bg-music-gradient animate-gradient-move mx-auto">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center p-6 text-white">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2" />
+                  {uploadResult && uploadResult.url && selectedVideoFile ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black">
+                      <video 
+                        src={uploadResult.url} 
+                        controls 
+                        autoPlay 
+                        className="h-full w-full object-contain" 
+                      />
                     </div>
-                  </div>
-                  <div className="absolute inset-0 flex justify-center">
-                    <div className="wave-animation wave-1 w-[240px] h-[240px] mt-[-60px]"></div>
-                    <div className="wave-animation wave-2 w-[400px] h-[400px] mt-[-140px]"></div>
-                    <div className="wave-animation wave-3 w-[600px] h-[600px] mt-[-240px]"></div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center p-6 text-white">
+                          <Sparkles className="h-8 w-8 mx-auto mb-2" />
+                        </div>
+                      </div>
+                      <div className="absolute inset-0 flex justify-center">
+                        <div className="wave-animation wave-1 w-[240px] h-[240px] mt-[-60px]"></div>
+                        <div className="wave-animation wave-2 w-[400px] h-[400px] mt-[-140px]"></div>
+                        <div className="wave-animation wave-3 w-[600px] h-[600px] mt-[-240px]"></div>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 {/* Two operation cards */}
@@ -107,10 +120,16 @@ const FileUploadHandler = () => {
                           type="video"
                           onFileSelect={(file, result) => {
                             setSelectedVideoFile(file);
+                            // 상위 컴포넌트에 결과를 전달
+                            setUploadResult(result);
+                            
                             if (result && result.file_url) {
                               setUploadedVideo(result.file_url);
+                            } else if (result && result.url) {
+                              // 새 video processing result format
+                              setUploadedVideo(result.url);
                             } else if (file) {
-                              // If no URL is returned, use the local URL
+                              // URL이 없으면 로컬 URL 사용
                               setUploadedVideo(URL.createObjectURL(file));
                             }
                             console.log('Video file selected', file, result);

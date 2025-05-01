@@ -62,7 +62,7 @@ export const uploadMultipleImages = async (files: File[]) => {
 /**
  * Upload a video file to the backend
  * @param file The video file to upload
- * @returns Response data from the server
+ * @returns Blob URL to the processed video
  */
 export const uploadVideo = async (file: File) => {
   try {
@@ -75,11 +75,19 @@ export const uploadVideo = async (file: File) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to upload video');
+      // 영상 업로드 시도 중 JSON 형식의 오류 메시지 파싱
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to upload video');
+      } catch (jsonError) {
+        // JSON 형식이 아닌 경우, 상태 텍스트 사용
+        throw new Error(`Failed to upload video: ${response.statusText}`);
+      }
     }
 
-    return await response.json();
+    // 영상 처리 성공 응답 - 영상 스트림을 가져와 Blob URL 생성
+    const videoBlob = await response.blob();
+    return URL.createObjectURL(videoBlob);
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;

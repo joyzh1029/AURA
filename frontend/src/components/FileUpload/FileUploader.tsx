@@ -102,14 +102,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
       
       try {
         setIsUploading(true);
-        const result = await uploadVideo(file);
-        toast.success('영상이 성공적으로 업로드되었습니다.');
-        console.log('Upload result:', result);
+        // 영상 처리 결과 - Blob URL 반환
+        const videoUrl = await uploadVideo(file);
+        toast.success('영상이 성공적으로 처리되었습니다.');
+        console.log('Video URL:', videoUrl);
         setUploadedFile(file);
-        onFileSelect(file, result);
+        // 영상 URL을 결과로 전달
+        onFileSelect(file, { url: videoUrl });
       } catch (error) {
         console.error('Upload error:', error);
-        toast.error('영상 업로드 중 오류가 발생했습니다.');
+        toast.error('영상 처리 중 오류가 발생했습니다.');
       } finally {
         setIsUploading(false);
       }

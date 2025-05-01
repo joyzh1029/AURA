@@ -62,7 +62,7 @@ def initialize_vector_store():
         print(f"Split into {len(texts)} text chunks.")
         
         # 임베딩 모델 초기화
-        embeddings = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="embedding-001")
+        embeddings = GoogleGenerativeAIEmbeddings(google_api_key=GOOGLE_API_KEY, model="models/embedding-001")
         
         # 벡터 저장소 생성
         vector_store = FAISS.from_documents(texts, embeddings)

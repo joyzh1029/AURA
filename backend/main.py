@@ -1,14 +1,17 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 import os
 import shutil
 from typing import List, Dict, Any, Optional
 import uuid
 import pathlib
 import moviepy.editor as mp
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+import tempfile
 from pydantic import BaseModel
+from runner import run_pipeline
 
 # Import chatbot functionality
 from chatbot import get_chatbot, process_message
@@ -183,10 +186,10 @@ async def upload_audio(file: UploadFile = File(...)):
     }
 
 # Update the upload-video endpoint to return full URLs
-@app.post("/upload-video/", response_model=Dict[str, Any])
+@app.post("/upload-video/")
 async def upload_video(file: UploadFile = File(...)):
     """
-    Upload a video file with duration validation (max 15 seconds, max 100MB)
+    Upload a video file, process it through the AURA pipeline and return the transformed video
     """
     # Validate file is a video
     if not file.content_type.startswith("video/"):
@@ -198,42 +201,38 @@ async def upload_video(file: UploadFile = File(...)):
     file.file.seek(0)
     if size > 100 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Video file size must be 100MB or smaller")
-    
-    # Create a temporary file to check video duration
-    with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
-        shutil.copyfileobj(file.file, temp_file)
-        temp_file_path = temp_file.name
-    
+
+    with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_in:
+        shutil.copyfileobj(file.file, temp_in)
+        temp_in.flush()
+        temp_video_path = temp_in.name
+
     try:
-        video = mp.VideoFileClip(temp_file_path)
-        duration = video.duration
-        video.close()
-        
-        if duration > 15:
-            os.unlink(temp_file_path)
-            raise HTTPException(status_code=400, detail="Video must be 15 seconds or shorter")
-        
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
-        shutil.move(temp_file_path, file_path)
-        
-        return {
-            "filename": unique_filename,
-            "original_filename": file.filename,
-            "content_type": file.content_type,
-            "file_path": file_path,
-            "url": get_file_url(unique_filename),
-            "duration": duration
-        }
-        
+        with TemporaryDirectory() as tmp_output_dir:
+            # run_pipeline 함수가 반환
+            temp_result_path, final_result_path = run_pipeline(temp_video_path, tmp_output_dir)
+            
+            # 사용자에게 영상 결과를 직접 반환
+            final_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            with open(temp_result_path, "rb") as src, open(final_temp.name, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+        return StreamingResponse(
+            open(final_temp.name, "rb"),
+            media_type="video/mp4",
+            headers={
+                "Content-Disposition": f"attachment; filename=generated_{uuid.uuid4()}.mp4"
+            }
+        )
     except Exception as e:
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
-        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
+        if os.path.exists(temp_video_path):
+            os.unlink(temp_video_path)
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
     finally:
         file.file.close()
-
+        if os.path.exists(temp_video_path):
+            os.unlink(temp_video_path)
+            
 # Make uploads directory accessible via HTTP
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
