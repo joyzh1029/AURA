@@ -1,0 +1,32 @@
+# Core packages
+torch==2.0.1+cu118
+torchvision==0.15.2+cu118
+torchaudio==2.0.2+cu118
+
+# Transformers and models
+transformers==4.35.2
+diffusers==0.21.4
+accelerate==0.25.0
+bitsandbytes==0.41.1
+
+# Image processing
+Pillow==10.0.1
+
+# Audio processing
+scipy==1.11.3
+pydub==0.25.1
+
+# NLP tools
+nltk==3.8.1
+spacy==3.7.2
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0-py3-none-any.whl
+
+# GUI
+tk==0.1.0
+
+# Extra dependencies
+numpy==1.24.3
+regex==2023.8.8
+
+# Find links for PyTorch with CUDA 11.8
+--find-links https://download.pytorch.org/whl/cu118/torch_stable.html
