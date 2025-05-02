@@ -16,5 +16,5 @@ soundfile==0.12.1
 torch==2.1.0+cu118
 uvicorn==0.34.2
 python-multipart==0.0.9
-aiofiles==23.2.1 #사용 하는지 모르겠음
+aiofiles==23.2.1
 faiss-cpu>=1.7.0
