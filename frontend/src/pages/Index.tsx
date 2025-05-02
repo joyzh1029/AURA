@@ -15,14 +15,18 @@ const Index = () => {
 
 const FileUploadHandler = () => {
   const { setUploadedImage, setUploadedVideo } = useChat();
+  // 기존 상태들
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoURL, setVideoURL] = useState<string | null>(null);
-  // 새 상태: 생성된 음악 파일 URL (audio 스트림)
+
+  // 새로운 상태 추가: 생성된 음악 파일 URL 저장 (음악 생성 후 오디오 스트림 URL) - 추가됨(HS)
   const [uploadedAudio, setUploadedAudio] = useState<string | null>(null);
-  // 새 상태: 이미지 업로드 후 음악 생성 요청이 진행 중임을 표시하는 플래그
+  
+  // 새로운 상태 추가: 이미지 업로드 후 음악 생성 요청 진행 중임을 표시하는 플래그 - 추가됨(HS)
   const [isConverting, setIsConverting] = useState(false);
+  
   const [resetTrigger, setResetTrigger] = useState(0);
 
   const hasFileUploaded = selectedImageFile !== null || selectedVideoFile !== null;
@@ -33,13 +37,13 @@ const FileUploadHandler = () => {
     setUploadedAudio(null);
     setVideoBlob(null);
     setVideoURL(null);
-    setIsConverting(false);
+    setIsConverting(false); // 음악 변환 진행 상태 초기화 - 수정됨(HS)
     setResetTrigger((prev) => prev + 1);
     setUploadedImage(null);
     setUploadedVideo(null);
   };
 
-  // 오디오 다운로드 기능
+  // 오디오 다운로드 기능 - 추가됨(HS)
   const downloadAudio = () => {
     if (uploadedAudio) {
       const a = document.createElement("a");
@@ -77,7 +81,7 @@ const FileUploadHandler = () => {
 
             <div className="col-span-1 h-[700px] flex flex-col justify-between">
               <div className="space-y-6">
-                {/* 상단 영역: 영상 업로드이면 영상, 이미지 업로드이면 상태에 따라 변환중 or 오디오 플레이어 표시 */}
+                {/* 상단 영역: 영상 업로드면 영상, 이미지 업로드면 상태에 따라 변환중 메시지 또는 오디오 플레이어+다운로드 버튼 표시 - 수정됨(HS) */}
                 <div className="relative h-[160px] rounded-xl overflow-hidden bg-music-gradient animate-gradient-move mx-auto">
                   {videoURL && selectedVideoFile ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -90,13 +94,13 @@ const FileUploadHandler = () => {
                     </div>
                   ) : selectedImageFile ? (
                     <>
-                      {isConverting ? (
+                      {isConverting ? ( // 음악 변환 진행 중이면 메시지 표시 - 추가됨(HS)
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
                           <div className="text-white text-xl font-medium">
                             음악 생성중입니다...
                           </div>
                         </div>
-                      ) : uploadedAudio ? (
+                      ) : uploadedAudio ? ( // 변환 완료시 오디오 플레이어와 다운로드 버튼 표시 - 수정됨(HS)
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
                           <audio
                             src={uploadedAudio}
@@ -129,7 +133,7 @@ const FileUploadHandler = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 이미지 -> 음악: 업로드 후 자동으로 음악 생성 요청 */}
+                  {/* 이미지 → 음악: 업로드 후 자동으로 음악 생성 요청 - 수정됨(HS) */}
                   <div className="bg-card border rounded-xl p-6 flex flex-col items-center text-center h-[280px]">
                     <div className="flex flex-col items-center space-y-4">
                       <div className="flex items-center space-x-1">
@@ -143,11 +147,11 @@ const FileUploadHandler = () => {
                         type="image"
                         onFileSelect={async (file) => {
                           setSelectedImageFile(file);
-                          setIsConverting(true);
+                          setIsConverting(true); // 이미지 업로드 후 음악 변환 시작 - 추가됨(HS)
                           try {
                             const formData = new FormData();
                             formData.append("file", file);
-                            // /upload-image-music/ 엔드포인트 호출
+                            // /upload-image-music/ 엔드포인트 호출 - 수정됨(HS)
                             const response = await fetch("/upload-image-music/", {
                               method: "POST",
                               body: formData,
@@ -161,7 +165,7 @@ const FileUploadHandler = () => {
                           } catch (error) {
                             console.error("Error generating music:", error);
                           } finally {
-                            setIsConverting(false);
+                            setIsConverting(false); // 변환 완료 후 상태 업데이트 - 수정됨(HS)
                           }
                         }}
                         resetTrigger={resetTrigger}
@@ -170,7 +174,7 @@ const FileUploadHandler = () => {
                     </div>
                   </div>
 
-                  {/* 영상 -> 음악 */}
+                  {/* 영상 → 음악: 영상 업로드 및 미리보기 기능 유지 - 수정됨(HS) */}
                   <div className="bg-card border rounded-xl p-6 flex flex-col items-center text-center h-[280px]">
                     <div className="flex flex-col items-center space-y-5">
                       <div className="flex items-center space-x-1">
@@ -196,7 +200,7 @@ const FileUploadHandler = () => {
                 </div>
               </div>
 
-              {/* 하단 영역: 업로드한 영상은 영상 미리보기, 업로드한 이미지는 이미지 미리보기만 */}
+              {/* 하단 영역: 업로드한 영상이면 영상 미리보기, 이미지이면 이미지 미리보기만 표시 - 수정됨(HS) */}
               <div className="bg-card border rounded-xl p-6 h-[200px] flex flex-col items-center justify-center relative">
                 {selectedVideoFile ? (
                   <div className="text-center">
