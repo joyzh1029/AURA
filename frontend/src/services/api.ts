@@ -54,12 +54,8 @@ export const uploadMultipleImages = async (files: File[]) => {
 
 /**
  * Upload a video file to the backend
-<<<<<<< HEAD
  * @param file The video file to upload
  * @returns Blob URL to the processed video
-=======
- * @returns Blob (not URL string)
->>>>>>> origin/jaehoon
  */
 export const uploadVideo = async (file: File): Promise<Blob> => {
   try {
@@ -72,29 +68,19 @@ export const uploadVideo = async (file: File): Promise<Blob> => {
     });
 
     if (!response.ok) {
-<<<<<<< HEAD
       // 영상 업로드 시도 중 JSON 형식의 오류 메시지 파싱
-=======
->>>>>>> origin/jaehoon
       try {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to upload video');
       } catch (jsonError) {
-<<<<<<< HEAD
         // JSON 형식이 아닌 경우, 상태 텍스트 사용
-=======
->>>>>>> origin/jaehoon
         throw new Error(`Failed to upload video: ${response.statusText}`);
       }
     }
 
-<<<<<<< HEAD
     // 영상 처리 성공 응답 - 영상 스트림을 가져와 Blob URL 생성
     const videoBlob = await response.blob();
     return URL.createObjectURL(videoBlob);
-=======
-    return await response.blob(); // ← Blob 객체 반환
->>>>>>> origin/jaehoon
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;
@@ -138,11 +124,8 @@ interface ChatMessageRequest {
 
 /**
  * Send a chat message to the LangChain-powered backend
-<<<<<<< HEAD
  * @param messageData The message data including text and any media URLs
  * @returns The AI response
-=======
->>>>>>> origin/jaehoon
  */
 export const sendChatMessage = async (messageData: ChatMessageRequest) => {
   try {

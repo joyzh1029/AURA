@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Environment variables and secrets
 .env
 *.env
@@ -91,45 +90,3 @@ yarn-error.log
 dist/
 build/
 out/
-=======
-# Python
-__pycache__/
-*.py[cod]
-*.so
-
-# 가상환경
-.venv/
-env/
-*.env
-
-# 시스템 파일
-.DS_Store
-Thumbs.db
-
-# Jupyter
-.ipynb_checkpoints/
-
-# 로그/DB
-*.log
-*.sqlite3
-
-# 모델/임시 미디어
-*.pt
-*.bin
-*.pth
-*.wav
-*.mp4
-*.avi
-*.tmp
-
-# 보안 키
-keys/
-
-# IDE 설정
-.vscode/
-.idea/
-
-# 기타
-pip-log.txt
-
->>>>>>> origin/jaehoon

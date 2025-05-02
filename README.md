@@ -71,7 +71,6 @@ python-dotenv
 pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
 ```
 
-<<<<<<< HEAD
 ### 프론트엔드 설치
 - Node.js 설치
 https://nodejs.org/ko
@@ -79,17 +78,10 @@ https://nodejs.org/ko
 ```bash
 cd frontend
 npm install
-=======
-### 2. 환경 변수 설정 (.env)
-
-```env
-GOOGLE_API_KEY=your_actual_gemini_key
->>>>>>> origin/jaehoon
 ```
 
 ---
 
-<<<<<<< HEAD
 ### 백엔드 서버 실행
 ```bash
 cd backend
@@ -132,9 +124,6 @@ npm run dev
 - TanStack Query
 
 ## 프로젝트 구조
-=======
-## 📁 폴더 구조 예시
->>>>>>> origin/jaehoon
 
 ```
 project_root/

@@ -9,7 +9,4 @@ python-dotenv>=1.0.0
 faiss-cpu>=1.7.0
 langchain-community>=0.0.35
 numpy<2.0
-<<<<<<< HEAD
 langdetect>=1.0.9
-=======
->>>>>>> origin/jaehoon
