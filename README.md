@@ -121,9 +121,9 @@ AURA2/
 
 
 ## 수정사항
-image_music_generator.py 추가
-\backend\main.py수정
-\frontend\src\pages\Index.tsx 수정(찾기에서 (HS)를 검색하면 수정된 부분 확인 가능)
+- image_music_generator.py 추가
+- \backend\main.py수정
+- \frontend\src\pages\Index.tsx 수정(찾기에서 (HS)를 검색하면 수정된 부분 확인 가능)
 
 >>>>>>> origin/zhouying
 =======
