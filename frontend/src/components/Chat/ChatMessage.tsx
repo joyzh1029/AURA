@@ -109,10 +109,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           ) : (
             <>
               <AvatarImage 
-                src="/placeholder.svg" 
+                src="" 
                 className="object-cover"
               />
-              <AvatarFallback className="bg-slate-600 text-white">U</AvatarFallback>
+              <AvatarFallback className="bg-purple-600 text-white font-bold">U</AvatarFallback>
             </>
           )}
         </Avatar>
