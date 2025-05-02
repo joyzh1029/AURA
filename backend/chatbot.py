@@ -194,9 +194,11 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
             검색된 정보: {raw_response}
             
             중요 지침:
-            1. 응답은 반드시 2-3줄 이내로 제한해야 합니다.
+            1. 응답은 반드시 1-2줄 이내로 제한해야 합니다.
             2. 정보의 핵심만 포함하고 불필요한 설명은 제외하세요.
             3. 응답은 자연스럽고 친절해야 합니다.
+            4. 중요 키워드나 기능은 '*'로 강조해주세요 (예: *이미지 변환*)
+            5. 긴 문장 대신 짧은 문장을 사용하고, 적절한 구분으로 가독성을 높이세요.
             
             응답은 다음 언어로 작성해주세요: {detected_language}
             """
@@ -205,22 +207,47 @@ def process_message(conversation, qa_chain=None, message="", image_url=None, vid
             llm = ChatGoogleGenerativeAI(
                 model="gemini-1.5-pro",
                 google_api_key=GOOGLE_API_KEY,
-                temperature=0.3,
-                max_output_tokens=150
+                temperature=0.2,  # 더 낮은 온도로 일관성 향상
+                max_output_tokens=100  # 더 짧은 출력 제한
             )
             final_response = llm.invoke(rewrite_prompt).content
             
-            # 후처리: 응답 길이 제한
-            if detected_language == "chinese":
-                # 중국어 응답의 경우 문장 수 제한
-                sentences = final_response.split('。')  # 중국어 문장 구분자
-                if len(sentences) > 2:
-                    # 처음 2개 문장만 유지하고 마지막에 문장 구분자 추가
-                    final_response = '。'.join(sentences[:2]) + '。'
-                
-                # 추가 길이 제한 (최대 100자)
-                if len(final_response) > 100:
-                    final_response = final_response[:97] + '...'
+            # 후처리: 응답 길이 제한 및 포맷팅
+            # 언어별 문장 구분자
+            sentence_separators = {
+                "korean": [".", "다.", "요.", "!", "?"],
+                "chinese": ["\u3002", "!", "?"],  # 。는 중국어 문장 구분자
+                "english": [".", "!", "?"]
+            }
+            
+            # 현재 언어에 맞는 구분자 가져오기
+            separators = sentence_separators.get(detected_language, [".", "!", "?"])
+            
+            # 문장 분할
+            sentences = []
+            current = ""
+            for char in final_response:
+                current += char
+                # 문장 끝이 발견되면 추가
+                if any(current.endswith(sep) for sep in separators):
+                    sentences.append(current.strip())
+                    current = ""
+            
+            # 마지막 문장이 남아있는 경우 추가
+            if current.strip():
+                sentences.append(current.strip())
+            
+            # 문장 수 제한 (2문장으로 제한)
+            if len(sentences) > 2:
+                sentences = sentences[:2]
+            
+            # 문장 길이 제한
+            for i, sentence in enumerate(sentences):
+                if len(sentence) > 50:
+                    sentences[i] = sentence[:47] + "..."
+            
+            # 최종 응답 재구성
+            final_response = " ".join(sentences)
             
             return final_response            
         except Exception as e:      

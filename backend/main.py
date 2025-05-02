@@ -1,217 +1,106 @@
-# 환경변수 설정 - OpenMP 충돌 해결
-import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse, FileResponse
+import os
 import shutil
-from typing import List, Dict, Any, Optional
+from typing import List
 import uuid
 import pathlib
-import moviepy.editor as mp
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import tempfile
-from pydantic import BaseModel
+import moviepy.editor as mp
 from runner import run_pipeline
+from dotenv import load_dotenv
+import traceback
 
-# Import chatbot functionality
-from chatbot import get_chatbot, process_message
+# 이미지 기반 음악 생성 모듈 import
+from logic.image_music_generator import ImageMusicGenerator
 
-# *변경됨: 이미지 분석 및 음악 생성 기능 추가(hwaseop)
-from PIL import Image
-from io import BytesIO
-import numpy as np
-import scipy.io.wavfile
-from logic.image_to_prompt import ImageToPrompt
-from logic.music_generator import MusicGenerator
+load_dotenv()
 
 app = FastAPI()
 
-# Configure CORS to allow requests from the frontend
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://192.168.0.142:8080", "*"],  # Frontend URLs
+    allow_origins=["http://localhost:8080", "http://192.168.0.142:8080", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
+OUTPUT_DIR = "outputs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Create audio directory if it doesn't exist
-# *변경됨: 음악 파일 저장 디렉토리 추가(hwaseop)
-AUDIO_DIR = "generated_audio"
-os.makedirs(AUDIO_DIR, exist_ok=True)
-
-# Get the absolute path to the frontend public directory
 BASE_DIR = pathlib.Path(__file__).parent.parent
 STATIC_DIR = BASE_DIR / "frontend" / "public"
-
-# Mount the static files directory
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
 def read_root():
-    return {"message": "AURA API is running"}
+    return {"message": "Image Upload API is running"}
 
-# Chat message model
-class ChatMessage(BaseModel):
-    message: str
-    image_url: Optional[str] = None
-    audio_url: Optional[str] = None
-    video_url: Optional[str] = None
+@app.post("/upload/")
+async def upload_image(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
 
-# Initialize chatbot and RAG QA chain
-chatbot, qa_chain = get_chatbot()
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
 
-@app.post("/chat/")
-async def chat(message: ChatMessage):
-    """
-    Process a chat message using LangChain with Google Gemini
-    """
     try:
-        # Process the message with LangChain and RAG
-        response = process_message(
-            conversation=chatbot,
-            qa_chain=qa_chain,
-            message=message.message,
-            image_url=message.image_url,
-            video_url=message.video_url,
-            audio_url=message.audio_url
-        )
-        
-        return {
-            "response": response,
-            "status": "success"
-        }
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    finally:
+        file.file.close()
 
-# Utility function to get the full URL for a file
-def get_file_url(filename: str) -> str:
-    base_url = "http://localhost:8001"
-    return f"{base_url}/uploads/{filename}"
-
-# *변경됨: 오디오 파일 URL 생성 함수 추가(hwaseop)
-def get_audio_url(filename: str) -> str:
-    base_url = "http://localhost:8001"
-    return f"{base_url}/audio/{filename}"
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path
+    }
 
 @app.post("/upload-multiple/")
 async def upload_multiple_images(files: List[UploadFile] = File(...)):
-    """
-    Upload multiple image files
-    """
     result = []
-    
+
     for file in files:
-        # Validate file is an image
         if not file.content_type.startswith("image/"):
             continue
-        
-        # Generate a unique filename
+
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
-        
-        # Save the file
+
         try:
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            
+
             result.append({
                 "filename": unique_filename,
                 "original_filename": file.filename,
                 "content_type": file.content_type,
-                "file_path": file_path,
-                "url": get_file_url(unique_filename)
+                "file_path": file_path
             })
         except Exception:
             pass
         finally:
             file.file.close()
-    
+
     return result
 
-# Update the upload endpoints to return full URLs
-@app.post("/upload/", response_model=Dict[str, Any])
-async def upload_image(file: UploadFile = File(...)):
-    """
-    Upload a single image file
-    """
-    # Validate file is an image
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    # Generate a unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save the file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
-    finally:
-        file.file.close()
-    
-    return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "content_type": file.content_type,
-        "file_path": file_path,
-        "url": get_file_url(unique_filename)
-    }
-
-# Update the upload-audio endpoint to return full URLs
-@app.post("/upload-audio/", response_model=Dict[str, Any])
-async def upload_audio(file: UploadFile = File(...)):
-    """
-    Upload an audio file
-    """
-    # Validate file is an audio
-    if not file.content_type.startswith("audio/"):
-        raise HTTPException(status_code=400, detail="File must be an audio")
-    
-    # Generate a unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save the file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
-    finally:
-        file.file.close()
-    
-    return {
-        "filename": unique_filename,
-        "original_filename": file.filename,
-        "content_type": file.content_type,
-        "file_path": file_path,
-        "url": get_file_url(unique_filename)
-    }
-
-# Update the upload-video endpoint to return full URLs
 @app.post("/upload-video/")
 async def upload_video(file: UploadFile = File(...)):
-    """
-    Upload a video file, process it through the AURA pipeline and return the transformed video
-    """
-    # Validate file is a video
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="File must be a video")
-    
-    # Validate file size (max 100MB)
+
     file.file.seek(0, os.SEEK_END)
     size = file.file.tell()
     file.file.seek(0)
@@ -225,12 +114,10 @@ async def upload_video(file: UploadFile = File(...)):
 
     try:
         with TemporaryDirectory() as tmp_output_dir:
-            # run_pipeline 함수가 반환
-            temp_result_path, final_result_path = run_pipeline(temp_video_path, tmp_output_dir)
-            
-            # 사용자에게 영상 결과를 직접 반환
+            result_path = run_pipeline(temp_video_path, tmp_output_dir)
+
             final_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            with open(temp_result_path, "rb") as src, open(final_temp.name, "wb") as dst:
+            with open(result_path, "rb") as src, open(final_temp.name, "wb") as dst:
                 shutil.copyfileobj(src, dst)
 
         return StreamingResponse(
@@ -241,84 +128,107 @@ async def upload_video(file: UploadFile = File(...)):
             }
         )
     except Exception as e:
-        if os.path.exists(temp_video_path):
-            os.unlink(temp_video_path)
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
     finally:
         file.file.close()
         if os.path.exists(temp_video_path):
             os.unlink(temp_video_path)
 
-# *변경됨: 이미지 분석 및 음악 생성 엔드포인트 추가(hwaseop)
-@app.post("/generate-music-from-image/")
-async def generate_music_from_image(file: UploadFile = File(...), duration: float = 15.0):
-    """
-    이미지를 분석하고 OCR로 텍스트를 추출하여 음악 생성
-    
-    Args:
-        file: 이미지 파일
-        duration: 생성할 음악 길이(초), 기본값 15초
-    """
-    # 이미지 파일 검증
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="파일이 이미지 형식이어야 합니다")
-    
+@app.post("/upload-audio/")
+async def upload_audio(file: UploadFile = File(...)):
+    if not file.content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="File must be an audio")
+
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
     try:
-        # 이미지 로드
-        image_data = await file.read()
-        image = Image.open(BytesIO(image_data))
-        
-        # 이미지 분석 및 프롬프트 생성
-        image_to_prompt = ImageToPrompt()
-        prompt = image_to_prompt.create_prompt_from_image(image)
-        
-        # 음악 생성
-        music_gen = MusicGenerator()
-        audio_data = music_gen.generate_music(prompt, duration)
-        
-        # 오디오 파일 저장
-        unique_filename = f"{uuid.uuid4()}.wav"
-        file_path = os.path.join(AUDIO_DIR, unique_filename)
-        
-        scipy.io.wavfile.write(
-            file_path, 
-            audio_data['sampling_rate'], 
-            audio_data['audio']
-        )
-        
-        return {
-            "filename": unique_filename,
-            "prompt": prompt,
-            "audio_url": get_audio_url(unique_filename),
-            "duration": duration
-        }
-    
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"음악 생성 오류: {str(e)}")
-    
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     finally:
         file.file.close()
 
-@app.get("/audio/{filename}")
-async def get_audio(filename: str):
-    """
-    생성된 오디오 파일 제공
-    """
-    file_path = os.path.join(AUDIO_DIR, filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다")
-    
-    return FileResponse(
-        file_path,
-        media_type="audio/wav",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
-            
-# Make uploads directory accessible via HTTP
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path
+    }
 
-# *변경됨: 생성된 오디오 디렉토리 마운트(hwaseop)
-app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
+# 이미지 업로드 → 음악 생성 → wav 다운로드 API (개선됨)
+@app.post("/upload-image-music/")
+async def upload_image_music(file: UploadFile = File(...)):
+    """
+    이미지 파일을 업로드 받아 음악으로 변환하여 반환합니다.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 가능합니다.")
+
+    # 파일 확장자 추출
+    file_ext = os.path.splitext(file.filename)[1]
+    
+    # 작업용 임시 디렉토리 생성
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        print(f"[INFO] Processing upload-image-music request")
+        print(f"[INFO] Temporary directory: {temp_dir}")
+        
+        # 1. 이미지 파일 저장
+        image_path = os.path.join(temp_dir, f"uploaded{file_ext}")
+        with open(image_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+            
+        print(f"[INFO] Image saved to: {image_path}")
+
+        # 2. 이미지 → 음악 생성
+        print(f"[INFO] Initializing ImageMusicGenerator")
+        music_generator = ImageMusicGenerator()
+        
+        print(f"[INFO] Generating music from image")
+        music_path = music_generator.generate_music_from_image(image_path, temp_dir)
+        
+        print(f"[INFO] Music generated successfully: {music_path}")
+        
+        # 3. 음악 파일 존재 확인
+        if not os.path.exists(music_path):
+            raise FileNotFoundError(f"Generated music file not found: {music_path}")
+            
+        filesize = os.path.getsize(music_path)
+        print(f"[INFO] Generated music file size: {filesize} bytes")
+        
+        if filesize == 0:
+            raise ValueError("Generated music file is empty")
+
+        # 4. 영구 저장용 파일 생성
+        output_filename = f"generated_music_{uuid.uuid4()}.wav"
+        permanent_path = os.path.join(OUTPUT_DIR, output_filename)
+        
+        # 임시 파일을 영구 저장 위치로 복사
+        shutil.copy2(music_path, permanent_path)
+        print(f"[INFO] Music file copied to permanent location: {permanent_path}")
+
+        # 5. StreamingResponse로 반환 (VideoAPI와 동일한 방식)
+        return StreamingResponse(
+            open(permanent_path, "rb"),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"attachment; filename={output_filename}"
+            }
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] Upload-image-music failed: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"이미지 음악 생성 실패: {str(e)}")
+    finally:
+        file.file.close()
+        
+        # 임시 디렉토리는 남겨두어 디버깅에 사용
+        print(f"[INFO] Temporary files remain in {temp_dir} for debugging")
 
 if __name__ == "__main__":
     import uvicorn

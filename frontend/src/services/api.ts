@@ -1,11 +1,7 @@
-// API service for handling backend requests
-
 const API_BASE_URL = 'http://localhost:8001';
 
 /**
  * Upload a single image file to the backend
- * @param file The file to upload
- * @returns Response data from the server
  */
 export const uploadImage = async (file: File) => {
   try {
@@ -31,13 +27,10 @@ export const uploadImage = async (file: File) => {
 
 /**
  * Upload multiple image files to the backend
- * @param files Array of files to upload
- * @returns Response data from the server
  */
 export const uploadMultipleImages = async (files: File[]) => {
   try {
     const formData = new FormData();
-    
     files.forEach((file) => {
       formData.append('files', file);
     });
@@ -61,10 +54,9 @@ export const uploadMultipleImages = async (files: File[]) => {
 
 /**
  * Upload a video file to the backend
- * @param file The video file to upload
- * @returns Blob URL to the processed video
+ * @returns Blob (not URL string)
  */
-export const uploadVideo = async (file: File) => {
+export const uploadVideo = async (file: File): Promise<Blob> => {
   try {
     const formData = new FormData();
     formData.append('file', file);
@@ -75,19 +67,15 @@ export const uploadVideo = async (file: File) => {
     });
 
     if (!response.ok) {
-      // 영상 업로드 시도 중 JSON 형식의 오류 메시지 파싱
       try {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Failed to upload video');
       } catch (jsonError) {
-        // JSON 형식이 아닌 경우, 상태 텍스트 사용
         throw new Error(`Failed to upload video: ${response.statusText}`);
       }
     }
 
-    // 영상 처리 성공 응답 - 영상 스트림을 가져와 Blob URL 생성
-    const videoBlob = await response.blob();
-    return URL.createObjectURL(videoBlob);
+    return await response.blob(); // ← Blob 객체 반환
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;
@@ -96,8 +84,6 @@ export const uploadVideo = async (file: File) => {
 
 /**
  * Upload an audio file to the backend
- * @param file The audio file to upload
- * @returns Response data from the server
  */
 export const uploadAudio = async (file: File) => {
   try {
@@ -133,8 +119,6 @@ interface ChatMessageRequest {
 
 /**
  * Send a chat message to the LangChain-powered backend
- * @param messageData The message data including text and any media URLs
- * @returns The AI response
  */
 export const sendChatMessage = async (messageData: ChatMessageRequest) => {
   try {
