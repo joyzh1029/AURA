@@ -38,4 +38,8 @@ class FrameExtractor:
             frame_idx += 1
 
         cap.release()
+<<<<<<< HEAD
         return frames
+=======
+        return frames
+>>>>>>> origin/jaehoon

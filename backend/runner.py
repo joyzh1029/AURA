@@ -5,12 +5,29 @@ from logic.llm_prompt_refiner import LLMPromptRefiner
 from logic.music_generator import MusicGenerator
 from moviepy.editor import VideoFileClip, AudioFileClip
 import numpy as np
+<<<<<<< HEAD
 import soundfile as sf
 
 def combine_video_audio(video_path, audio_path, output_path):
     video = VideoFileClip(video_path)
     audio = AudioFileClip(audio_path)
 
+=======
+import time
+import wave
+
+
+def combine_video_audio(video_path, audio_path, output_path):
+    video = VideoFileClip(video_path)
+
+    try:
+        with wave.open(audio_path, 'rb') as wf:
+            print(f"[INFO] 음악 확인 완료: {audio_path}, 길이={wf.getnframes() / wf.getframerate():.2f}s")
+    except wave.Error as e:
+        raise ValueError(f"[ERROR] 생성된 음악 WAV 파일이 잘못되었습니다: {e}")
+
+    audio = AudioFileClip(audio_path)
+>>>>>>> origin/jaehoon
     if audio.duration > video.duration:
         audio = audio.subclip(0, video.duration)
 
@@ -20,6 +37,7 @@ def combine_video_audio(video_path, audio_path, output_path):
     video.close()
     audio.close()
 
+<<<<<<< HEAD
 def run_pipeline(video_path: str, output_dir: str) -> str:
     # 처리 파일 저장을 위한 임시 디렉토리 생성
     os.makedirs(output_dir, exist_ok=True)
@@ -38,11 +56,20 @@ def run_pipeline(video_path: str, output_dir: str) -> str:
     
     # 영상 결과를 영구적으로 저장할 디렉토리 생성
     final_result_path = os.path.join(results_dir, f"aura_video_{filename_only}_{timestamp}.mp4")
+=======
+
+def run_pipeline(video_path: str, output_dir: str) -> str:
+    os.makedirs(output_dir, exist_ok=True)
+    filename_only = os.path.splitext(os.path.basename(video_path))[0]
+    music_path = os.path.join(output_dir, f"music_{filename_only}.wav")
+    result_path = os.path.join(output_dir, f"result_{filename_only}.mp4")
+>>>>>>> origin/jaehoon
 
     # [1단계] 프레임 추출
     extractor = FrameExtractor()
     frames = extractor.extract_frames(video_path)
 
+<<<<<<< HEAD
     # [2단계] 감성 문장 생성
     analyzer = BLIPEmotionAnalyzer()
     raw_caption = analyzer.analyze_frames(frames)
@@ -70,3 +97,34 @@ def run_pipeline(video_path: str, output_dir: str) -> str:
     
     # 반환
     return temp_result_path, final_result_path
+=======
+    # [2단계] 감성 자막 분석
+    analyzer = BLIPEmotionAnalyzer()
+    analyzer_result = analyzer.analyze_frames(frames)
+    top_caption = analyzer_result["top_caption"]
+    top_captions = analyzer_result["top_captions"]
+
+    # [3단계] 프롬프트 정제
+    refiner = LLMPromptRefiner()
+    refined_prompt = refiner.refine_prompt(top_caption, top_captions)
+
+    # [4단계] 음악 생성 및 바로 저장
+    clip = VideoFileClip(video_path)
+    generator = MusicGenerator()
+    generator.generate_music(refined_prompt, clip.duration, music_path)
+
+    try:
+        clip.reader.close()
+        if clip.audio:
+            clip.audio.reader.close_proc()
+    except Exception as e:
+        print(f"[WARN] Video clip 해제 중 오류: {str(e)}")
+    finally:
+        clip.close()
+        time.sleep(0.5)
+
+    # [5단계] 비디오+음악 합성
+    combine_video_audio(video_path, music_path, result_path)
+
+    return result_path
+>>>>>>> origin/jaehoon

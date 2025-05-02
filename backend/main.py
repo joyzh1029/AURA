@@ -6,11 +6,18 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
+<<<<<<< HEAD
+=======
+import os
+>>>>>>> origin/jaehoon
 import shutil
 from typing import List, Dict, Any, Optional
 import uuid
 import pathlib
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+import tempfile
 import moviepy.editor as mp
+<<<<<<< HEAD
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import tempfile
 from pydantic import BaseModel
@@ -18,33 +25,36 @@ from runner import run_pipeline
 
 # Import chatbot functionality
 from chatbot import get_chatbot, process_message
+=======
+from runner import run_pipeline
+from dotenv import load_dotenv
+
+load_dotenv()
+>>>>>>> origin/jaehoon
 
 app = FastAPI()
 
-# Configure CORS to allow requests from the frontend
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://192.168.0.142:8080", "*"],  # Frontend URLs
+    allow_origins=["http://localhost:8080", "http://192.168.0.142:8080", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create uploads directory if it doesn't exist
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Get the absolute path to the frontend public directory
 BASE_DIR = pathlib.Path(__file__).parent.parent
 STATIC_DIR = BASE_DIR / "frontend" / "public"
-
-# Mount the static files directory
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 @app.get("/")
 def read_root():
     return {"message": "AURA API is running"}
 
+<<<<<<< HEAD
 # Chat message model
 class ChatMessage(BaseModel):
     message: str
@@ -60,6 +70,17 @@ async def chat(message: ChatMessage):
     """
     Process a chat message using LangChain with Google Gemini
     """
+=======
+@app.post("/upload/")
+async def upload_image(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+>>>>>>> origin/jaehoon
     try:
         # Process the message with LangChain and RAG
         response = process_message(
@@ -76,35 +97,42 @@ async def chat(message: ChatMessage):
             "status": "success"
         }
     except Exception as e:
+<<<<<<< HEAD
         raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
 
 # Utility function to get the full URL for a file
 def get_file_url(filename: str) -> str:
     base_url = "http://localhost:8001"
     return f"{base_url}/uploads/{filename}"
+=======
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+    finally:
+        file.file.close()
+
+    return {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "file_path": file_path
+    }
+>>>>>>> origin/jaehoon
 
 @app.post("/upload-multiple/")
 async def upload_multiple_images(files: List[UploadFile] = File(...)):
-    """
-    Upload multiple image files
-    """
     result = []
-    
+
     for file in files:
-        # Validate file is an image
         if not file.content_type.startswith("image/"):
             continue
-        
-        # Generate a unique filename
+
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
-        
-        # Save the file
+
         try:
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            
+
             result.append({
                 "filename": unique_filename,
                 "original_filename": file.filename,
@@ -116,9 +144,10 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
             pass
         finally:
             file.file.close()
-    
+
     return result
 
+<<<<<<< HEAD
 
 
 
@@ -158,20 +187,55 @@ async def upload_image(file: UploadFile = File(...)):
 
 # Update the upload-audio endpoint to return full URLs
 @app.post("/upload-audio/", response_model=Dict[str, Any])
+=======
+@app.post("/upload-video/")
+async def upload_video(file: UploadFile = File(...)):
+    if not file.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="File must be a video")
+
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Video file size must be 100MB or smaller")
+
+    with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_in:
+        shutil.copyfileobj(file.file, temp_in)
+        temp_in.flush()
+        temp_video_path = temp_in.name
+
+    try:
+        with TemporaryDirectory() as tmp_output_dir:
+            result_path = run_pipeline(temp_video_path, tmp_output_dir)
+
+            final_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+            with open(result_path, "rb") as src, open(final_temp.name, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+        return StreamingResponse(
+            open(final_temp.name, "rb"),
+            media_type="video/mp4",
+            headers={
+                "Content-Disposition": f"attachment; filename=generated_{uuid.uuid4()}.mp4"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+    finally:
+        file.file.close()
+        if os.path.exists(temp_video_path):
+            os.unlink(temp_video_path)
+
+@app.post("/upload-audio/")
+>>>>>>> origin/jaehoon
 async def upload_audio(file: UploadFile = File(...)):
-    """
-    Upload an audio file
-    """
-    # Validate file is an audio
     if not file.content_type.startswith("audio/"):
         raise HTTPException(status_code=400, detail="File must be an audio")
-    
-    # Generate a unique filename
+
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    # Save the file
+
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -179,7 +243,7 @@ async def upload_audio(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
     finally:
         file.file.close()
-    
+
     return {
         "filename": unique_filename,
         "original_filename": file.filename,
