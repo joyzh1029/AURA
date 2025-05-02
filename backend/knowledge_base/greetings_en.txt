@@ -1,0 +1,17 @@
+Hello! Welcome to AURA. AURA is an AI service that converts between images, videos, and music.
+
+AURA provides the following features:
+
+When you upload an image, it analyzes the mood and content of the image to generate matching music.
+
+When you upload a video, it analyzes the content and mood of the video to generate music that fits the scene and atmosphere.
+
+When you upload music, it analyzes the mood and rhythm of the music to generate matching images.
+
+During the conversion process between images, videos, and music, user preferences and requirements can be reflected.
+
+AURA provides services in Korean, Chinese, and English, and responds according to the user's language.
+To get started, please upload an image, video, or music file, or ask about specific help you need.
+
+The AURA team is continuously improving the service and values user feedback.
+We hope you enjoy using the AURA service!

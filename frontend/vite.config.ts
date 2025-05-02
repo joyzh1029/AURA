@@ -10,19 +10,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     proxy: {
       "/upload": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8001",
         changeOrigin: true,
       },
       "/upload-video": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8001",
         changeOrigin: true,
-      },
+      },  
       "/upload-multiple": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8001",
         changeOrigin: true,
       },
       "/upload-audio": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8001",
         changeOrigin: true,
       },
     },

@@ -31,12 +31,12 @@ interface ChatContextProps {
 const ChatContext = createContext<ChatContextProps | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const welcomeMessage = '안녕하세요! 음악과 이미지를 변환하는 AURA입니다. 이미지를 업로드하면 음악을 생성해 드리고, 음악을 업로드하면 이미지를 생성해 드립니다. 무엇을 도와드릴까요?';
+  const welcomeMessage = '안녕하세요! AURA입니다. 무엇을 도와드릴까요?';
   
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: '안녕하세요! 음악과 이미지를 변환하는 AURA입니다. 이미지를 업로드하면 음악을 생성해 드리고, 음악을 업로드하면 이미지를 생성해 드립니다. 무엇을 도와드릴까요?',
+      content: welcomeMessage,
       type: 'text',
       sender: 'bot',
       timestamp: new Date(),

@@ -1,21 +1,21 @@
 import os
+from dotenv import load_dotenv
 import google.generativeai as genai
 
 class LLMPromptRefiner:
     def __init__(self, api_key=None):
         """
-        Gemini API Key를 받아 초기화. 없으면 keys/gemini_api_key.txt 파일에서 읽는다.
+        Gemini API Key를 받아 초기화. 없으면 .env 파일의 GOOGLE_API_KEY를 사용한다.
         """
+        load_dotenv()
+
         if api_key:
             self.api_key = api_key
         else:
-            base_dir = os.path.dirname(__file__)
-            key_path = os.path.join(base_dir, "..", "keys", "gemini_api_key.txt")
-            if not os.path.exists(key_path):
-                raise FileNotFoundError("Gemini API 키 파일을 찾을 수 없습니다: keys/gemini_api_key.txt")
+            self.api_key = os.getenv("GOOGLE_API_KEY")
 
-            with open(key_path, "r") as f:
-                self.api_key = f.read().strip()
+            if not self.api_key:
+                raise ValueError("Gemini API 키가 설정되지 않았습니다. .env 파일에 GOOGLE_API_KEY를 정의하세요.")
 
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(model_name="models/gemini-1.5-pro")

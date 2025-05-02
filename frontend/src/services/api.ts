@@ -1,11 +1,7 @@
-// API service for handling backend requests
-
 const API_BASE_URL = 'http://localhost:8001';
 
 /**
  * Upload a single image file to the backend
- * @param file The file to upload
- * @returns Response data from the server
  */
 export const uploadImage = async (file: File) => {
   try {
@@ -31,13 +27,10 @@ export const uploadImage = async (file: File) => {
 
 /**
  * Upload multiple image files to the backend
- * @param files Array of files to upload
- * @returns Response data from the server
  */
 export const uploadMultipleImages = async (files: File[]) => {
   try {
     const formData = new FormData();
-
     files.forEach((file) => {
       formData.append('files', file);
     });
@@ -60,9 +53,8 @@ export const uploadMultipleImages = async (files: File[]) => {
 };
 
 /**
- * Upload a video file to the backend and return the result as a Blob
- * @param file The video file to upload
- * @returns Blob data of generated video
+ * Upload a video file to the backend
+ * @returns Blob (not URL string)
  */
 export const uploadVideo = async (file: File): Promise<Blob> => {
   try {
@@ -75,11 +67,15 @@ export const uploadVideo = async (file: File): Promise<Blob> => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Failed to upload video');
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to upload video');
+      } catch (jsonError) {
+        throw new Error(`Failed to upload video: ${response.statusText}`);
+      }
     }
 
-    return await response.blob();
+    return await response.blob(); // ← Blob 객체 반환
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;
@@ -88,8 +84,6 @@ export const uploadVideo = async (file: File): Promise<Blob> => {
 
 /**
  * Upload an audio file to the backend
- * @param file The audio file to upload
- * @returns Response data from the server
  */
 export const uploadAudio = async (file: File) => {
   try {
@@ -109,6 +103,41 @@ export const uploadAudio = async (file: File) => {
     return await response.json();
   } catch (error) {
     console.error('Error uploading audio:', error);
+    throw error;
+  }
+};
+
+/**
+ * Interface for chat message request
+ */
+interface ChatMessageRequest {
+  message: string;
+  image_url?: string;
+  audio_url?: string;
+  video_url?: string;
+}
+
+/**
+ * Send a chat message to the LangChain-powered backend
+ */
+export const sendChatMessage = async (messageData: ChatMessageRequest) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messageData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to process chat message');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending chat message:', error);
     throw error;
   }
 };

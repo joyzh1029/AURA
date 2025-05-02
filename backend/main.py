@@ -11,6 +11,9 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 import tempfile
 import moviepy.editor as mp
 from runner import run_pipeline
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 

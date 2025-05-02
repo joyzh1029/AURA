@@ -36,8 +36,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
-        if (video.duration > 20) {
-          toast.error('영상은 20초 이하만 업로드 가능합니다.');
+        if (video.duration > 30) {
+          toast.error('영상은 30초 이하만 업로드 가능합니다.');
           resolve(false);
         } else {
           resolve(true);
@@ -197,7 +197,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
                 {disabled ? (
                   <span className="text-red-500">업로드 불가</span>
                 ) : (
-                  type === 'image' ? '이미지 업로드' : type === 'video' ? '영상 (15초 이하) 업로드' : '음악 업로드'
+                  type === 'image' ? '이미지 업로드' : type === 'video' ? '영상 (30초 이하) 업로드' : '음악 업로드'
                 )}
               </div>
             </>
@@ -216,4 +216,3 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
 };
 
 export default FileUploader;
-
