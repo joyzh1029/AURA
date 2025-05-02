@@ -9,12 +9,12 @@ AI 감성 자동 뮤직비디오 생성기
 - 입력 비디오 → 프레임 추출 (FrameExtractor)
 - 프레임 해석 (BLIPEmotionAnalyzer)
 - 감성 기반 프롬프트 생성 (LLMPromptRefiner - Gemini 1.5 Pro)
-- 음악 생성 (MusicGenerator - MusicGen-small)
+- 음악 생성 (audiocraft MusicGen)
 - 비디오+음악 합성 및 결과 저장
   
 주요 라이브러리: torch, transformers, google-generativeai, moviepy, soundfile, opencv-python, numpy
 
-주요 모델: BLIP, Gemini 1.5 Pro, MusicGen
+주요 모델: BLIP, Gemini 1.5 Pro,  audiocraft MusicGen
 
 주의사항: Torch CUDA 버전 필요, Gemini API Key 준비 필요
 
