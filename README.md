@@ -41,7 +41,7 @@ AI 감성 자동 뮤직비디오 생성기
 
 7. [6단계] 최종 결과 전송
    - /upload-video/ API가 최종 .mp4 파일을 StreamingResponse로 반환
-
+'''
 🔧 사용 라이브러리
 torch
 transformers
@@ -54,15 +54,15 @@ numpy
 scipy
 fastapi
 python-dotenv
-
+'''
 ⚠️ 사용 전 준비 사항
-
+'''
 1. CUDA 버전 Torch 설치 (cu118 기준):
 pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
-
+'''
 2. 환경 변수 설정 (.env):
 GOOGLE_API_KEY=your_actual_gemini_key
-
+'''
 📁 폴더 구조 예시
 project_root/
 ├── main.py
@@ -75,3 +75,4 @@ project_root/
 ├── uploads/
 ├── frontend/public/
 ├── .env
+'''
