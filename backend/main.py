@@ -2,6 +2,7 @@
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
+import traceback
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +22,9 @@ from runner import run_pipeline
 # Import chatbot functionality
 from chatbot import get_chatbot, process_message
 
+# 이미지 기반 음악 생성 모듈 import
+from logic.image_music_generator import ImageMusicGenerator
+
 app = FastAPI()
 
 # CORS 설정
@@ -32,8 +36,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "uploads"
+# 设置上传和结果目录
+BACKEND_DIR = pathlib.Path(__file__).parent
+UPLOAD_DIR = BACKEND_DIR / "uploads"
+OUTPUT_DIR = BACKEND_DIR / "results"
+
+# 确保目录存在
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
 STATIC_DIR = BASE_DIR / "frontend" / "public"
@@ -91,7 +101,7 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
 
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        file_path = str(UPLOAD_DIR / unique_filename)
 
         try:
             with open(file_path, "wb") as buffer:
@@ -221,9 +231,83 @@ async def upload_video(file: UploadFile = File(...)):
         file.file.close()
         if os.path.exists(temp_video_path):
             os.unlink(temp_video_path)
+
             
 # Make uploads directory accessible via HTTP
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
+# 이미지 업로드 → 음악 생성 → wav 다운로드 API (개선됨)
+@app.post("/upload-image-music/")
+async def upload_image_music(file: UploadFile = File(...)):
+    """
+    이미지 파일을 업로드 받아 음악으로 변환하여 반환합니다.
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 가능합니다.")
+
+    # 파일 확장자 추출
+    file_ext = os.path.splitext(file.filename)[1]
+    
+    # 작업용 임시 디렉토리 생성
+    temp_dir = tempfile.mkdtemp()
+    
+    try:
+        print(f"[INFO] Processing upload-image-music request")
+        print(f"[INFO] Temporary directory: {temp_dir}")
+        
+        # 1. 이미지 파일 저장
+        image_path = os.path.join(temp_dir, f"uploaded{file_ext}")
+        with open(image_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+            
+        print(f"[INFO] Image saved to: {image_path}")
+
+        # 2. 이미지 → 음악 생성
+        print(f"[INFO] Initializing ImageMusicGenerator")
+        music_generator = ImageMusicGenerator()
+        
+        print(f"[INFO] Generating music from image")
+        music_path = music_generator.generate_music_from_image(image_path, temp_dir)
+        
+        print(f"[INFO] Music generated successfully: {music_path}")
+        
+        # 3. 음악 파일 존재 확인
+        if not os.path.exists(music_path):
+            raise FileNotFoundError(f"Generated music file not found: {music_path}")
+            
+        filesize = os.path.getsize(music_path)
+        print(f"[INFO] Generated music file size: {filesize} bytes")
+        
+        if filesize == 0:
+            raise ValueError("Generated music file is empty")
+
+        # 4. 영구 저장용 파일 생성
+        output_filename = f"generated_music_{uuid.uuid4()}.wav"
+        permanent_path = str(OUTPUT_DIR / output_filename)
+        
+        # 임시 파일을 영구 저장 위치로 복사
+        shutil.copy2(music_path, permanent_path)
+        print(f"[INFO] Music file copied to permanent location: {permanent_path}")
+
+        # 5. StreamingResponse로 반환 (VideoAPI와 동일한 방식)
+        return StreamingResponse(
+            open(permanent_path, "rb"),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"attachment; filename={output_filename}"
+            }
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] Upload-image-music failed: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"이미지 음악 생성 실패: {str(e)}")
+    finally:
+        file.file.close()
+        
+        # 임시 디렉토리는 남겨두어 디버깅에 사용
+        print(f"[INFO] Temporary files remain in {temp_dir} for debugging")
+
 
 if __name__ == "__main__":
     import uvicorn
