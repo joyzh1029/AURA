@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ChatProvider, useChat } from '@/contexts/ChatContext';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import { Sparkles, Music, Image as ImageIcon, Video, Upload, RefreshCw } from 'lucide-react';
-import FileUploader from "@/components/FileUpload/FileUploader";
-import { ENDPOINTS } from "@/config/api";
+import FileUploader from "@/components/FileUpload/FileUploader"; 
+import { ENDPOINTS, DEFAULT_OPTIONS } from "@/config/api";
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -151,6 +151,7 @@ const FileUploadHandler = () => {
                           timeEstimateFormData.append("file", file);
                           console.log('发送时间预测请求...');
                           const timeResponse = await fetch(ENDPOINTS.ESTIMATE_TIME, {
+                            ...DEFAULT_OPTIONS,
                             method: "POST",
                             body: timeEstimateFormData,
                           });
@@ -167,6 +168,7 @@ const FileUploadHandler = () => {
                           const formData = new FormData();
                           formData.append("file", file);
                           const response = await fetch(ENDPOINTS.UPLOAD_IMAGE_MUSIC, {
+                            ...DEFAULT_OPTIONS,
                             method: "POST",
                             body: formData,
                           });

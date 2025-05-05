@@ -1,6 +1,14 @@
 // API configuration
 export const API_BASE_URL = 'http://localhost:8001';
 
+// Default request options
+export const DEFAULT_OPTIONS = {
+    credentials: 'include' as RequestCredentials,
+    headers: {
+        'Accept': 'application/json',
+    },
+};
+
 // API endpoints
 export const ENDPOINTS = {
     ESTIMATE_TIME: `${API_BASE_URL}/estimate-processing-time/`,

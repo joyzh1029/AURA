@@ -35,10 +35,11 @@ time_estimator = ProcessingTimeEstimator()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://192.168.0.142:8080", "*"],
+    allow_origins=["http://localhost:8080"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
 )
 
 # 设置上传和结果目录
