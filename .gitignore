@@ -46,7 +46,6 @@ yarn-debug.log*
 yarn-error.log*
 
 # Media files
-uploads/
 media/
 *.mp3
 *.mp4
