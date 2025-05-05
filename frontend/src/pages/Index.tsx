@@ -75,21 +75,12 @@ const FileUploadHandler = () => {
           <div className="col-span-1 h-[700px] flex flex-col justify-between">
             <div className="space-y-6">
               <div className="relative h-[160px] rounded-xl overflow-hidden bg-music-gradient animate-gradient-move mx-auto">
-                {videoURL && selectedVideoFile ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black">
-                    <video
-                      src={videoURL}
-                      controls
-                      autoPlay
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                ) : selectedImageFile ? (
+                {selectedVideoFile || selectedImageFile ? (
                   <>
                     {isConverting ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-music-gradient animate-gradient-move">
                         <div className="text-white text-xl font-medium flex flex-col items-center gap-2">
-                          <div>음악 생성중입니다...</div>
+                          <div>{selectedVideoFile ? '영상 처리중입니다...' : '음악 생성중입니다...'}</div>
                           {processingTime && (
                             <div className="text-sm">
                               예상 소요시간: 약 {processingTime}초
@@ -97,8 +88,30 @@ const FileUploadHandler = () => {
                           )}
                         </div>
                       </div>
+                    ) : selectedVideoFile && videoURL ? (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-music-gradient animate-gradient-move">
+                        <video
+                          key={videoURL}
+                          src={videoURL}
+                          controls
+                          autoPlay
+                          playsInline
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            console.error('Video playback error:', e);
+                          }}
+                          onLoadedData={(e) => {
+                            console.log('Video loaded successfully');
+                            const video = e.currentTarget;
+                            video.muted = false;
+                            video.play().catch(err => {
+                              console.error('Autoplay failed:', err);
+                            });
+                          }}
+                        />
+                      </div>
                     ) : uploadedAudio ? (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-music-gradient animate-gradient-move">
                         <audio
                           src={uploadedAudio}
                           controls
@@ -202,11 +215,20 @@ const FileUploadHandler = () => {
                     </p>
                     <FileUploader
                       type="video"
-                      onFileSelect={(file, blob) => {
+                      onFileSelect={(file, result) => {
                         setSelectedVideoFile(file);
-                        setVideoBlob(blob);
-                        const url = URL.createObjectURL(blob);
-                        setVideoURL(url);
+                        if (result === null) {
+                          // Show loading state
+                          setIsConverting(true);
+                        } else if (result?.url) {
+                          // Video processing complete
+                          setVideoURL(result.url);
+                          setIsConverting(false);
+                          setProcessingTime(null);
+                        }
+                      }}
+                      onProcessingTimeUpdate={(time) => {
+                        setProcessingTime(time);
                       }}
                       resetTrigger={resetTrigger}
                       disabled={hasFileUploaded && !selectedVideoFile}

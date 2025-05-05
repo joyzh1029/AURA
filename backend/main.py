@@ -13,7 +13,7 @@ import uuid
 import pathlib
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import tempfile
-import moviepy.editor as mp
+from moviepy.editor import VideoFileClip, AudioFileClip
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 import tempfile
 from pydantic import BaseModel
@@ -191,52 +191,103 @@ async def upload_audio(file: UploadFile = File(...)):
     }
 
 # Update the upload-video endpoint to return full URLs
+@app.post("/estimate-video-time/")
+async def estimate_video_processing_time(file: UploadFile = File(...)):
+    """
+    预测视频处理时间的端点
+    """
+    if not file.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="비디오 파일만 가능합니다.")
+
+    try:
+        print(f"[INFO] 开始视频处理时间预测请求")
+        # Get video file size
+        file.file.seek(0, os.SEEK_END)
+        size = file.file.tell()
+        file.file.seek(0)
+
+        # 预测处理时间 - 基于视频大小估算
+        # 假设每MB需要2秒处理时间
+        time_estimate = int((size / (1024 * 1024)) * 2)
+        # 确保最小处理时间为10秒
+        time_estimate = max(10, time_estimate)
+        print(f"[INFO] 视频处理时间预测结果: {time_estimate}秒")
+        
+        return {"estimated_time": time_estimate}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/upload-video/")
 async def upload_video(file: UploadFile = File(...)):
     """
-    Upload a video file, process it through the AURA pipeline and return the transformed video
+    Upload a video file, process it through the AURA pipeline
     """
-    # Validate file is a video
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="File must be a video")
     
-    # Validate file size (max 100MB)
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > 100 * 1024 * 1024:
+    # Check file size
+    content = await file.read()
+    if len(content) > 100 * 1024 * 1024:  # 100MB limit
         raise HTTPException(status_code=400, detail="Video file size must be 100MB or smaller")
 
-    with NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_in:
-        shutil.copyfileobj(file.file, temp_in)
-        temp_in.flush()
-        temp_video_path = temp_in.name
+    temp_video_path = None
+    temp_result = None
+    final_result = None
 
     try:
-        with TemporaryDirectory() as tmp_output_dir:
-            # run_pipeline 함수가 반환
-            temp_result_path, final_result_path = run_pipeline(temp_video_path, tmp_output_dir)
-            
-            # 사용자에게 영상 결과를 직접 반환
-            final_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            with open(temp_result_path, "rb") as src, open(final_temp.name, "wb") as dst:
-                shutil.copyfileobj(src, dst)
+        # Save uploaded file
+        temp_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+        with open(temp_video_path, "wb") as buffer:
+            buffer.write(content)
 
-        return StreamingResponse(
-            open(final_temp.name, "rb"),
-            media_type="video/mp4",
-            headers={
-                "Content-Disposition": f"attachment; filename=generated_{uuid.uuid4()}.mp4"
-            }
-        )
+        print(f"[INFO] Video saved to temp path: {temp_video_path}")
+
+        # Create temporary directory for processing
+        with TemporaryDirectory() as tmp_dir:
+            # Process video through AURA pipeline
+            temp_result, final_result = run_pipeline(temp_video_path, tmp_dir)
+            print(f"[INFO] Video processing complete. Result at: {final_result}")
+
+            # Return the final processed video with audio
+            if os.path.exists(final_result):
+                return StreamingResponse(
+                    open(final_result, "rb"),
+                    media_type="video/mp4",
+                    headers={
+                        "Content-Type": "video/mp4",
+                        "Accept-Ranges": "bytes",
+                        "Cache-Control": "no-cache",
+                        "Access-Control-Allow-Origin": "*"
+                    }
+                )
+            else:
+                raise FileNotFoundError(f"Processed video file not found: {final_result}")
+
     except Exception as e:
-        if os.path.exists(temp_video_path):
-            os.unlink(temp_video_path)
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
-    finally:
-        file.file.close()
-        if os.path.exists(temp_video_path):
-            os.unlink(temp_video_path)
+        print(f"[ERROR] Video processing failed: {str(e)}")
+        print(traceback.format_exc())
+        
+        # Cleanup on error
+        if temp_video_path and os.path.exists(temp_video_path):
+            try:
+                os.unlink(temp_video_path)
+            except:
+                pass
+                
+        if temp_result and os.path.exists(temp_result):
+            try:
+                os.unlink(temp_result)
+            except:
+                pass
+                
+        if final_result and os.path.exists(final_result):
+            try:
+                os.unlink(final_result)
+            except:
+                pass
+                
+        raise HTTPException(status_code=500, detail=f"Failed to process video: {str(e)}")
 
             
 # Make uploads directory accessible via HTTP

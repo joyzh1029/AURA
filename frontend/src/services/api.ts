@@ -53,6 +53,29 @@ export const uploadMultipleImages = async (files: File[]) => {
 };
 
 /**
+ * Estimate video processing time
+ * @param file The video file to estimate processing time for
+ * @returns Estimated processing time in seconds
+ */
+export const estimateVideoTime = async (file: File): Promise<number> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/estimate-video-time/`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Failed to estimate video processing time');
+  }
+
+  const data = await response.json();
+  return data.estimated_time;
+};
+
+/**
  * Upload a video file to the backend
  * @param file The video file to upload
  * @returns Blob URL to the processed video
@@ -78,9 +101,16 @@ export const uploadVideo = async (file: File): Promise<Blob> => {
       }
     }
 
-    // 영상 처리 성공 응답 - 영상 스트림을 가져와 Blob URL 생성
+    // 영상 처리 성공 응답 - 영상 스트림을 가져오기
     const videoBlob = await response.blob();
-    return URL.createObjectURL(videoBlob);
+    if (videoBlob.size === 0) {
+      throw new Error('Received empty video response');
+    }
+    
+    // Create a new blob with proper MIME type
+    const properBlob = new Blob([videoBlob], { type: 'video/mp4' });
+    console.log('Created video blob:', properBlob);
+    return properBlob;
   } catch (error) {
     console.error('Error uploading video:', error);
     throw error;

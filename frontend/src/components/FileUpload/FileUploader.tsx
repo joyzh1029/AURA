@@ -3,16 +3,17 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, Music, Video, Loader2 } from 'lucide-react';
 import { useChat } from '@/contexts/ChatContext';
-import { uploadImage, uploadVideo, uploadAudio } from '@/services/api';
+import { uploadImage, uploadVideo, uploadAudio, estimateVideoTime } from '@/services/api';
 
 interface FileUploaderProps {
   type: 'image' | 'video' | 'music';
   onFileSelect: (file: File, uploadResult?: any) => void;
   resetTrigger?: number;
   disabled?: boolean;
+  onProcessingTimeUpdate?: (time: number) => void;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTrigger = 0, disabled = false }) => {
+const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTrigger = 0, disabled = false, onProcessingTimeUpdate }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -91,17 +92,29 @@ const FileUploader: React.FC<FileUploaderProps> = ({ type, onFileSelect, resetTr
       if (!isValidDuration) return;
       try {
         setIsUploading(true);
-        // 영상 처리 결과 - Blob URL 반환
-        const videoUrl = await uploadVideo(file);
-        toast.success('영상이 성공적으로 처리되었습니다.');
-        console.log('Video URL:', videoUrl);
+        
+        // 처리 시간 예측
+        const estimatedTime = await estimateVideoTime(file);
+        onProcessingTimeUpdate?.(estimatedTime);
+        
+        // 로딩 상태 표시
+        onFileSelect(file, null);
+        
+        // 영상 처리 및 음악 추가
+        const videoBlob = await uploadVideo(file);
+        const videoUrl = URL.createObjectURL(videoBlob);
+        
+        toast.success('영상이 성공적으로 생성되었습니다.');
         setUploadedFile(file);
-        // 영상 URL을 결과로 전달
+        
+        // 영상 URL 전달
         onFileSelect(file, { url: videoUrl });
+        onProcessingTimeUpdate?.(0);
       } catch (error) {
         console.error('Upload error:', error);
         toast.error('영상 처리 중 오류가 발생했습니다.');
         toast.error('영상 업로드 실패');
+        onProcessingTimeUpdate?.(0); // Reset processing time on error
       } finally {
         setIsUploading(false);
       }
