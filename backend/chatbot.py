@@ -28,77 +28,191 @@ SUPPORTED_LANGS = ["ko", "en", "zh"]  # 지원 언어 목록
 # 지식 베이스 디렉토리 경로
 KNOWLEDGE_BASE_DIR = "knowledge_base"
 
-def detect_language(text: str) -> str:
-    """개선된 언어 감지 로직"""
-    # 짧은 메시지 특별 처리
-    if not text or len(text.strip()) < 3:
-        # 영어 짧은 인사
-        if text.strip().lower() in ["hi", "hello", "hey"]:
-            return "en"
-        # 중국어 짧은 인사
-        elif text.strip() in ["你好", "您好", "嗨"]:
-            return "zh"
-        # 기타 짧은 텍스트는 내용 기반 판단
+def get_query_type(text: str) -> str:
+    """메시지 유형 확인"""
+    text_lower = text.strip().lower()
     
+    # 인사말 패턴
+    greetings = {
+        "en": ["hi", "hello", "hey", "good morning", "good afternoon", "good evening"],
+        "zh": ["你好", "您好", "嗨", "早上好", "下午好", "晚上好"],
+        "ko": ["안녕", "안녕하세요", "좋은아침", "좋은오후", "좋은저녁"]
+    }
+    
+    # 변환 요청 패턴
+    conversion_patterns = {
+        "en": ["convert", "change", "transform"],
+        "zh": ["转换", "变成", "生成"],
+        "ko": ["변환", "바꾸", "만들"]
+    }
+    
+    # 인사말만 있는 경우
+    if any(greeting in text_lower for greetings_list in greetings.values() for greeting in greetings_list) and \
+       not any(pattern in text_lower for patterns_list in conversion_patterns.values() for pattern in patterns_list):
+        return "greeting"
+    
+    # 변환 요청 확인
+    if any(pattern in text_lower for patterns_list in conversion_patterns.values() for pattern in patterns_list) or \
+       "음악" in text_lower or "music" in text_lower or "音乐" in text_lower:
+        return "conversion"
+        
+    return "other"
+
+def detect_language(text: str) -> str:
+    """언어 감지 (한국어, 영어, 중국어 지원)"""
     try:
-        lang = detect(text)
-        return lang if lang in SUPPORTED_LANGS else "ko"  # 불확실할 경우 한국어 기본값
-    except LangDetectException:
-        return "ko"  # 예외 시 한국어 기본값
+        # 중국어 키워드 검색
+        chinese_keywords = [
+            "中文", "回答", "请", "想要", "帮助",
+            "音乐", "视频", "图片", "转换"
+        ]
+        if any(keyword in text for keyword in chinese_keywords):
+            return "zh"
+            
+        # 한국어 키워드 검색
+        korean_keywords = [
+            "안녕", "음악", "비디오", "이미지", "변환",
+            "도와", "주세요", "해주세요"
+        ]
+        if any(keyword in text for keyword in korean_keywords):
+            return "ko"
+            
+        # langdetect로 추가 검사
+        detected = detect(text)
+        if detected.startswith("zh"):
+            return "zh"
+        elif detected.startswith("ko"):
+            return "ko"
+        elif detected.startswith("en"):
+            return "en"
+            
+        return "en"  # 기본값을 영어로 변경
+    except Exception as e:
+        print(f"[ERROR] Language detection failed: {str(e)}")
+        return "en"  # 예외 시 영어 기본값
 
 def get_translation(text: str, target_lang: str) -> str:
-    """간단한 번역 함수 (실제 API 대체 필요)"""
-    # 실제 구현에서는 Google Translate나 다른 번역 API 사용 권장
-    print(f"번역 필요: {text[:30]}... -> {target_lang}")
-    return generate_fallback_response(target_lang)
+    """간단한 번역 함수"""
+    translations = {
+        "ko": {
+            "Image Conversion": "이미지 변환",
+            "Video Conversion": "비디오 변환",
+            "Drag and drop": "드래그 앤 드롭",
+            "click to select": "클릭하여 선택",
+            "automatically": "자동으로",
+            "generate": "생성",
+            "download": "다운로드",
+            "play": "재생"
+        },
+        "zh": {
+            "Image Conversion": "图片转换",
+            "Video Conversion": "视频转换",
+            "Drag and drop": "拖放",
+            "click to select": "点击选择",
+            "automatically": "自动",
+            "generate": "生成",
+            "download": "下载",
+            "play": "播放"
+        }
+    }
+    
+    if target_lang not in translations:
+        return text
+        
+    result = text
+    for eng, trans in translations[target_lang].items():
+        result = result.replace(eng, trans)
+    
+    return result
 
 def validate_translation(text: str, target_lang: str) -> str:
-    """출력 언어 확인"""
+    """출력 언어 확인 및 번역"""
     try:
+        # 단순 문자열인 경우 바로 반환
+        if len(text.strip()) < 10:
+            return text
+            
+        # 언어 감지
         detected = detect(text)
+        print(f"[INFO] Detected response language: {detected}, target: {target_lang}")
+        
         if detected == target_lang:
             return text
-        print(f"응답 언어 불일치: 감지={detected}, 목표={target_lang}")
-        return get_translation(text, target_lang)
+            
+        # 번역 필요
+        print(f"[INFO] Translation needed from {detected} to {target_lang}")
+        translated = get_translation(text, target_lang)
+        
+        # 번역 결과 확인
+        if len(translated.strip()) > 10:
+            print(f"[INFO] Translation successful")
+            return translated
+        else:
+            print(f"[WARNING] Translation may have failed, returning original")
+            return text
+            
     except Exception as e:
-        print(f"번역 검증 오류: {str(e)}")
-        return text  # 오류 시 원본 텍스트 유지
+        print(f"[ERROR] Translation validation failed: {str(e)}")
+        return text
 
 def initialize_vector_store():
-    """벡터 저장소 초기화 (최적화된 청킹 설정)"""
+    """벡터 저장소 초기화 (최적화된 청크 설정)"""
     try:
         if not os.path.exists(KNOWLEDGE_BASE_DIR):
             os.makedirs(KNOWLEDGE_BASE_DIR)
+            print(f"[INFO] Created knowledge base directory: {KNOWLEDGE_BASE_DIR}")
+        
+        file_paths = glob.glob(f"{KNOWLEDGE_BASE_DIR}/*.txt")
+        print(f"[INFO] Found knowledge base files: {file_paths}")
+        
+        if not file_paths:
+            print("[WARNING] No text files found in knowledge base directory")
+            return None
         
         documents = []
-        file_paths = glob.glob(f"{KNOWLEDGE_BASE_DIR}/*.txt")
-        
         for file_path in file_paths:
             try:
                 loader = TextLoader(file_path, encoding='utf-8')
-                documents.extend(loader.load())
+                loaded_docs = loader.load()
+                documents.extend(loaded_docs)
+                print(f"[INFO] Loaded {len(loaded_docs)} documents from {file_path}")
             except Exception as e:
-                print(f"파일 로드 오류 {file_path}: {str(e)}")
+                print(f"[ERROR] Failed to load {file_path}: {str(e)}")
+                continue
         
         if not documents:
+            print("[WARNING] No valid documents loaded from knowledge base")
             return None
+        
+        print(f"[INFO] Total documents loaded: {len(documents)}")
         
         # 최적화된 청크 설정
         text_splitter = CharacterTextSplitter(
-            chunk_size=300,
-            chunk_overlap=50,
-            separator="\n\n"
-        )
-        texts = text_splitter.split_documents(documents)
-        
-        embeddings = GoogleGenerativeAIEmbeddings(
-            google_api_key=GOOGLE_API_KEY, 
-            model="models/embedding-001"
+            chunk_size=500,
+            chunk_overlap=100,
+            separator="\n",
+            length_function=len
         )
         
-        return FAISS.from_documents(texts, embeddings)
+        try:
+            texts = text_splitter.split_documents(documents)
+            print(f"[INFO] Split into {len(texts)} text chunks")
+            
+            embeddings = GoogleGenerativeAIEmbeddings(
+                google_api_key=GOOGLE_API_KEY, 
+                model="models/embedding-001"
+            )
+            
+            vector_store = FAISS.from_documents(texts, embeddings)
+            print("[INFO] Vector store initialized successfully")
+            return vector_store
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to create vector store: {str(e)}")
+            return None
+            
     except Exception as e:
-        print(f"벡터 저장소 초기화 오류: {str(e)}")
+        print(f"[ERROR] Vector store initialization failed: {str(e)}")
         return None
 
 def create_prompt_template(detected_lang: str) -> PromptTemplate:
@@ -111,7 +225,7 @@ def create_prompt_template(detected_lang: str) -> PromptTemplate:
     
     template = f"""SYSTEM: You are AURA - an AI assistant specializing in image/music conversion.
 IMPORTANT INSTRUCTION:
-1. You MUST respond ONLY in {lang_map.get(detected_lang, 'English')}
+1. You MUST respond ONLY in {lang_map.get(detected_lang)}
 2. Maintain technical accuracy
 3. Reference uploaded media when present
 4. Be helpful and friendly
@@ -128,35 +242,57 @@ AURA:"""
     )
 
 def get_chatbot() -> Tuple[ConversationChain, RetrievalQA]:
-    """챗봇 초기화 (최적화 설정)"""
-    if not GOOGLE_API_KEY:
-        raise ValueError("GOOGLE_API_KEY 필요")
-    
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        google_api_key=GOOGLE_API_KEY,
-        temperature=0.2,  # 낮은 온도로 일관성 향상
-        top_p=0.95,
-        convert_system_message_to_human=True
-    )
-    
-    memory = ConversationBufferMemory(
-        return_messages=True,
-        memory_key="history",
-        input_key="input"
-    )
-    
-    vector_store = initialize_vector_store()
-    qa_chain = None
-    
-    if vector_store:
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vector_store.as_retriever(
-                search_kwargs={"k": 2}
-            )
+    """채팅 모델 초기화"""
+    try:
+        print("[INFO] Initializing chatbot...")
+        
+        if not GOOGLE_API_KEY:
+            raise ValueError("GOOGLE_API_KEY is not set")
+        
+        # 모델 초기화
+        llm = ChatGoogleGenerativeAI(
+            google_api_key=GOOGLE_API_KEY,
+            model="gemini-1.5-flash",
+            temperature=0.7,
+            convert_system_message_to_human=True
         )
+        print("[INFO] LLM initialized successfully")
+        
+        # 일반 대화용 체인
+        conversation = ConversationChain(
+            llm=llm,
+            memory=ConversationBufferMemory()
+        )
+        print("[INFO] Conversation chain initialized")
+        
+        # 지식 기반 QA 체인
+        vector_store = initialize_vector_store()
+        if vector_store:
+            qa_chain = RetrievalQA.from_chain_type(
+                llm=llm,
+                chain_type="stuff",
+                retriever=vector_store.as_retriever(),
+                return_source_documents=True
+            )
+            print("[INFO] QA chain initialized with vector store")
+        else:
+            qa_chain = None
+            print("[WARNING] QA chain initialization failed - no vector store")
+            
+        return conversation, qa_chain
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize chatbot: {str(e)}")
+        # 创建一个基本的对话链作为后备
+        basic_llm = ChatGoogleGenerativeAI(
+            google_api_key=GOOGLE_API_KEY,
+            model="gemini-pro",
+            temperature=0.7
+        )
+        basic_conversation = ConversationChain(
+            llm=basic_llm,
+            memory=ConversationBufferMemory()
+        )
+        return basic_conversation, None
     
     return ConversationChain(
         llm=llm,
@@ -172,41 +308,83 @@ def process_message(
 ) -> str:
     """강화된 메시지 처리 파이프라인"""
     try:
-        # 언어 감지 및 프롬프트 설정
+        # 언어 감지
         detected_lang = detect_language(message)
-        print(f"감지된 언어: {detected_lang}, 메시지: {message[:20]}...")
+        print(f"[INFO] Detected language: {detected_lang}, Message: {message[:50]}...")
         
-        prompt_template = create_prompt_template(detected_lang)
-        conversation.prompt = prompt_template
+        # 쿼리 유형 판단
+        query_type = get_query_type(message)
+        print(f"[INFO] Query type detected: {query_type}")
         
-        # 미디어 정보 통합
-        input_text = message
-        for media_type, url in media_urls.items():
-            if url:
-                input_text += f"\n[미디어:{media_type}={url}]"
+        # 인사말 처리
+        if query_type == "greeting":
+            return get_greeting_response(detected_lang)
+            
+        # 변환 요청 처리
+        elif query_type == "conversion":
+            print("[INFO] Conversion request detected, providing guidance")
+            if not qa_chain:
+                print("[ERROR] QA chain not initialized")
+                return get_fallback_response(detected_lang)
+                
+            # 간단한 응답 템플릿
+            conversion_guides = {
+                "ko": "이미지나 비디오 파일을 업로드하시면 AI가 분석하여 음악을 생성해드립니다. 지원 형식: JPG, PNG, MP4, AVI",
+                "en": "Upload your image or video file and our AI will analyze it to generate music. Supported formats: JPG, PNG, MP4, AVI",
+                "zh": "上传您的图片或视频文件，AI将分析并生成音乐。支持格式：JPG、PNG、MP4、AVI"
+            }
+            
+            return conversion_guides.get(detected_lang, conversion_guides["en"])
+                
+    except Exception as e:
+        print(f"처리 실패: {str(e)}")
+        return get_fallback_response(detected_lang)
         
         # 응답 생성
-        if len(message) > 15 and qa_chain:
+        if qa_chain:
+            # 始终尝试使用知识库
             rag_result = qa_chain({"query": input_text})
             response = rag_result.get('result', '')
+            
+            # 记录使用的知识库内容
+            if 'source_documents' in rag_result:
+                print("[INFO] Used knowledge base documents:")
+                for doc in rag_result['source_documents']:
+                    print(f"- {doc.page_content[:100]}...")
+            
+            # 如果RAG结果不理想，回退到普通对话
+            if not response or len(response.strip()) < 10:
+                print("[INFO] RAG response too short, falling back to conversation")
+                response = conversation.predict(input=input_text)
         else:
             response = conversation.predict(input=input_text)
         
         # 응답이 올바른 언어인지 확인
         return response  # 검증 후 직접 반환
     
-    except Exception as e:
-        print(f"처리 실패: {str(e)}")
-        return generate_fallback_response(detected_lang)
+    return get_fallback_response(lang)
 
-def generate_fallback_response(lang: str) -> str:
+def get_fallback_response(lang: str) -> str:
     """언어별 안전망 응답"""
     fallback_responses = {
-        "ko": "죄송합니다. 시스템 오류가 발생했습니다. 다시 시도해주세요.",
-        "en": "Sorry, we encountered a system error. Please try again.",
-        "zh": "很抱歉，系统发生错误，请再试一次。"       
+        "ko": "죄송합니다. 일시적인 문제가 발생했습니다. 잠시 후에 다시 시도해주세요.",
+        "en": "I apologize for the temporary issue. Please try again in a moment.",
+        "zh": "对不起，出现了临时问题。请稍后再试。"
     }
     return fallback_responses.get(lang, fallback_responses["en"])
+
+def generate_fallback_response(lang: str) -> str:
+    """兼容旧的函数名"""
+    return get_fallback_response(lang)
+
+def get_greeting_response(lang: str) -> str:
+    """언어별 인사말 응답"""
+    greetings = {
+        "ko": "안녕하세요! AURA입니다. 이미지나 비디오를 음악으로 변환해드립니다.",
+        "en": "Hello! This is AURA. I can convert your images or videos into music.",
+        "zh": "您好！这里是AURA。我可以将您的图片或视频转换成音乐。"
+    }
+    return greetings.get(lang, greetings["en"])
 
 # 테스트 실행
 if __name__ == "__main__":

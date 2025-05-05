@@ -3,14 +3,14 @@ import React, { useState, useRef } from 'react';
 import { useChat } from '@/contexts/ChatContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mic, MicOff, Send, Image as ImageIcon, Music } from 'lucide-react';
+import { Send, Image as ImageIcon, Music } from 'lucide-react';
 import ImagePreview from '@/components/ImagePreview/ImagePreview';
 import { sendChatMessage } from '@/services/api';
 
 const ChatInput = () => {
   const { addMessage, isLoading, setIsLoading, uploadedImage, uploadedVideo, uploadedMusic, setUploadedImage, setUploadedVideo, setUploadedMusic } = useChat();
   const [inputValue, setInputValue] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,10 +94,7 @@ const ChatInput = () => {
     }
   };
 
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // Here you would implement actual voice recording functionality
-  };
+
 
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-2">
@@ -123,16 +120,7 @@ const ChatInput = () => {
         />
       </div>
       
-      <Button
-        type="button"
-        size="icon"
-        variant="outline"
-        onClick={toggleRecording}
-        className={isRecording ? 'text-red-500' : ''}
-      >
-        {isRecording ? <MicOff /> : <Mic />}
-      </Button>
-      
+
       <Button type="submit" size="icon" disabled={(!inputValue.trim() && !uploadedImage && !uploadedMusic) || isLoading}>
         <Send className="h-4 w-4" />
       </Button>
