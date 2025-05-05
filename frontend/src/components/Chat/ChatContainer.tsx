@@ -9,7 +9,7 @@ const ChatContainer: React.FC = () => {
   const { messages, clearChat, isLoading } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Scroll to the bottom of messages whenever messages change
+  // 메시지 변경 시 메시지가 제일 아래로 이동
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);

@@ -1,4 +1,4 @@
-# 환경변수 설정 - OpenMP 충돌 해결
+# 환경 변수 설정 - OpenMP 충돌 해결
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -19,17 +19,17 @@ import tempfile
 from pydantic import BaseModel
 from runner import run_pipeline
 
-# Import chatbot functionality
+# 챗봇 기능 가져오기
 from chatbot import get_chatbot, process_message
 
-# 이미지 기반 음악 생성 모듈 import
+# 이미지 기반 음악 생성 모듈 가져오기
 from logic.image_music_generator import ImageMusicGenerator
 from logic.time_estimator import ProcessingTimeEstimator
 from PIL import Image
 
 app = FastAPI()
 
-# Initialize time estimator
+# 시간 추정기 초기화
 time_estimator = ProcessingTimeEstimator()
 
 # CORS 설정
@@ -42,12 +42,12 @@ app.add_middleware(
     expose_headers=["Content-Disposition"]
 )
 
-# 设置上传和结果目录
+# 업로드 및 결과 디렉토리 설정
 BACKEND_DIR = pathlib.Path(__file__).parent
 UPLOAD_DIR = BACKEND_DIR / "uploads"
 OUTPUT_DIR = BACKEND_DIR / "results"
 
-# 确保目录存在
+# 디렉토리 존재 확인
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -59,14 +59,14 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 def read_root():
     return {"message": "AURA API is running"}
 
-# Chat message model
+# 채팅 메시지 모델
 class ChatMessage(BaseModel):
     message: str
     image_url: Optional[str] = None
     audio_url: Optional[str] = None
     video_url: Optional[str] = None
 
-# Initialize chatbot and RAG QA chain
+# 챗봇 및 RAG QA 체인 초기화
 chatbot, qa_chain = get_chatbot()
 
 @app.post("/chat/")
@@ -75,7 +75,7 @@ async def chat(message: ChatMessage):
     Process a chat message using LangChain with Google Gemini
     """
     try:
-        # Process the message with LangChain and RAG
+        # LangChain과 RAG로 메시지 처리
         response = process_message(
             conversation=chatbot,
             qa_chain=qa_chain,
@@ -92,7 +92,7 @@ async def chat(message: ChatMessage):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing chat: {str(e)}")
 
-# Utility function to get the full URL for a file
+# 파일의 전체 URL을 가져오는 유틸리티 함수
 def get_file_url(filename: str) -> str:
     base_url = "http://localhost:8001"
     return f"{base_url}/uploads/{filename}"
@@ -132,22 +132,22 @@ async def upload_multiple_images(files: List[UploadFile] = File(...)):
 
 
 
-# Update the upload endpoints to return full URLs
+# 전체 URL을 반환하도록 업로드 엔드포인트 업데이트
 @app.post("/upload/", response_model=Dict[str, Any])
 async def upload_image(file: UploadFile = File(...)):
     """
     Upload a single image file
     """
-    # Validate file is an image
+    # 파일이 이미지인지 검증
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
     
-    # Generate a unique filename
+    # 고유한 파일명 생성
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
     
-    # Save the file
+    # 파일 저장
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -164,7 +164,7 @@ async def upload_image(file: UploadFile = File(...)):
         "url": get_file_url(unique_filename)
     }
 
-# Update the upload-audio endpoint to return full URLs
+# 전체 URL을 반환하도록 오디오 업로드 엔드포인트 업데이트
 @app.post("/upload-audio/", response_model=Dict[str, Any])
 async def upload_audio(file: UploadFile = File(...)):
     if not file.content_type.startswith("audio/"):
@@ -190,7 +190,7 @@ async def upload_audio(file: UploadFile = File(...)):
         "url": get_file_url(unique_filename)
     }
 
-# Update the upload-video endpoint to return full URLs
+# 전체 URL을 반환하도록 비디오 업로드 엔드포인트 업데이트
 @app.post("/estimate-video-time/")
 async def estimate_video_processing_time(file: UploadFile = File(...)):
     """
@@ -201,15 +201,15 @@ async def estimate_video_processing_time(file: UploadFile = File(...)):
 
     try:
         print(f"[INFO] 开始视频处理时间预测请求")
-        # Get video file size
+        # 비디오 파일 크기 가져오기
         file.file.seek(0, os.SEEK_END)
         size = file.file.tell()
         file.file.seek(0)
 
-        # 预测处理时间 - 基于视频大小估算
-        # 假设每MB需要2秒处理时间
+        # 처리 시간 예측 - 비디오 크기 기반 추정
+        # MB당 2초의 처리 시간 가정
         time_estimate = int((size / (1024 * 1024)) * 2)
-        # 确保最小处理时间为10秒
+        # 최소 처리 시간 10초 보장
         time_estimate = max(10, time_estimate)
         print(f"[INFO] 视频处理时间预测结果: {time_estimate}秒")
         
@@ -226,9 +226,9 @@ async def upload_video(file: UploadFile = File(...)):
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="File must be a video")
     
-    # Check file size
+    # 파일 크기 확인
     content = await file.read()
-    if len(content) > 100 * 1024 * 1024:  # 100MB limit
+    if len(content) > 100 * 1024 * 1024:  # 100MB 제한
         raise HTTPException(status_code=400, detail="Video file size must be 100MB or smaller")
 
     temp_video_path = None
@@ -236,7 +236,7 @@ async def upload_video(file: UploadFile = File(...)):
     final_result = None
 
     try:
-        # Save uploaded file
+        # 업로드된 파일 저장
         temp_video_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
         with open(temp_video_path, "wb") as buffer:
             buffer.write(content)

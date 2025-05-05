@@ -78,7 +78,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     }
   };
 
-  // Skip standard message container for system messages
+  // 시스템 메시지는 표준 메시지 컨테이너를 건너뜁니다.
   if (message.type === 'system') {
     return (
       <div className="mx-auto my-2 max-w-[80%]">

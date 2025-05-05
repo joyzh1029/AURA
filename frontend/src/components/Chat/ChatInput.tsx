@@ -20,14 +20,14 @@ const ChatInput = () => {
     const messageText = inputValue;
     setInputValue('');
 
-    // Add user message
+    // 사용자 메시지 추가
     addMessage({
       content: messageText,
       type: 'text',
       sender: 'user',
     });
 
-    // Track media URLs to send to the backend
+    // 미디어 URL 추적 (백엔드에 전송)
     let imageUrl = null;
     let audioUrl = null;
     let videoUrl = null;
@@ -65,7 +65,7 @@ const ChatInput = () => {
     setIsLoading(true);
 
     try {
-      // Send message to LangChain-powered backend
+      // LangChain 기반 백엔드로 메시지 전송
       const response = await sendChatMessage({
         message: messageText,
         image_url: imageUrl,
@@ -73,7 +73,7 @@ const ChatInput = () => {
         video_url: videoUrl
       });
       
-      // Add bot response
+      // 챗봇 응답 추가
       addMessage({
         content: response.response,
         type: 'text',

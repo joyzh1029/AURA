@@ -1,6 +1,6 @@
 """
-img2audio.py - Convert images to audio using AI
-Extracts keywords and text from images, creates descriptions, and generates music
+img2audio.py - AI를 사용하여 이미지를 오디오로 변환
+이미지에서 키워드와 텍스트를 추출하고, 설명을 생성하고, 음악을 생성합니다
 """
 
 import os
@@ -13,38 +13,38 @@ from pathlib import Path
 from typing import Tuple, Dict, List, Optional, Union
 import time
 
-# Set up logging
+# 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Environment variable to prevent OpenMP conflicts
+# OpenMP 충돌 방지를 위한 환경 변수
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-# Check CUDA availability
+# CUDA 사용 가능 여부 확인
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 logger.info(f"Using device: {DEVICE}")
 
-# Track VRAM usage
+# VRAM 사용량 추적
 def log_gpu_memory():
     if torch.cuda.is_available():
         logger.info(f"GPU Memory allocated: {torch.cuda.memory_allocated(0) / 1024**2:.2f} MB")
         logger.info(f"GPU Memory cached: {torch.cuda.memory_cached(0) / 1024**2:.2f} MB")
 
-# ===== IMAGE ANALYSIS MODULE =====
+# ===== 이미지 분석 모듈 =====
 
 def load_blip_model():
-    """Load BLIP image captioning model (lightweight version)"""
+    """가볍게 최적화된 BLIP 이미지 캐프션 모델 로드"""
     try:
         from transformers import BlipProcessor, BlipForConditionalGeneration
         
-        # Use the smaller BLIP model to conserve VRAM
+        # VRAM 절약을 위해 더 작은 BLIP 모델 사용
         model_name = "Salesforce/blip-image-captioning-base"
         
-        # Load processor and model
+        # 프로세서와 모델 로드
         processor = BlipProcessor.from_pretrained(model_name)
         model = BlipForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.float16)
         
-        # Move model to appropriate device
+        # 모델을 적절한 장치로 이동
         model = model.to(DEVICE)
         
         log_gpu_memory()
@@ -54,25 +54,25 @@ def load_blip_model():
         return None, None
 
 def extract_image_keywords(image_path: str) -> str:
-    """Extract keywords and description from image using BLIP"""
+    """BLIP를 사용하여 이미지에서 키워드와 설명 추출"""
     try:
-        # Load image
+        # 이미지 로드
         raw_image = Image.open(image_path).convert('RGB')
         
-        # Load BLIP model
+        # BLIP 모델 로드
         processor, model = load_blip_model()
         if processor is None or model is None:
             return "Error loading image analysis model"
             
-        # Process image
+        # 이미지 처리
         inputs = processor(raw_image, return_tensors="pt").to(DEVICE, torch.float16)
         
-        # Generate caption
+        # 캐프션 생성
         with torch.no_grad():
             outputs = model.generate(**inputs, max_new_tokens=50)
             caption = processor.decode(outputs[0], skip_special_tokens=True)
         
-        # Clear CUDA cache after processing
+        # 처리 후 CUDA 캐시 정리
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         
@@ -82,22 +82,22 @@ def extract_image_keywords(image_path: str) -> str:
         logger.error(f"Error analyzing image: {e}")
         return "Failed to analyze image"
 
-# ===== OCR MODULE =====
+# ===== OCR 모듈 =====
 
 def perform_ocr(image_path: str) -> str:
-    """Extract text from images using OCR"""
+    """OCR을 사용하여 이미지에서 텍스트 추출"""
     try:
-        # Import here to avoid loading if not needed
+        # 필요하지 않을 때 로딩을 피하기 위해 여기서 가져오기
         import pytesseract
         from PIL import Image
         
-        # Open image
+        # 이미지 열기
         image = Image.open(image_path)
         
-        # Perform OCR
+        # OCR 수행
         text = pytesseract.image_to_string(image)
         
-        # Clean and return text
+        # 텍스트 정리 및 반환
         cleaned_text = text.strip()
         logger.info(f"OCR extracted text: {cleaned_text}")
         return cleaned_text
@@ -106,7 +106,7 @@ def perform_ocr(image_path: str) -> str:
         import subprocess
         try:
             subprocess.check_call(["pip", "install", "pytesseract"])
-            # Try again after installation
+            # 설치 후 다시 시도
             import pytesseract
             image = Image.open(image_path)
             text = pytesseract.image_to_string(image)
@@ -118,43 +118,43 @@ def perform_ocr(image_path: str) -> str:
         logger.error(f"OCR error: {e}")
         return ""
 
-# ===== TEXT PROCESSING MODULE =====
+# ===== 텍스트 처리 모듈 =====
 
 def generate_description(image_caption: str, ocr_text: str) -> str:
-    """Combine image analysis and OCR text into a coherent description"""
+    """이미지 분석과 OCR 텍스트를 통합하여 일관된 설명 생성"""
     
     # Import here to reduce initial memory footprint
     try:
         from transformers import pipeline
         
-        # If we don't have meaningful inputs, return empty
+        # 의미 있는 입력이 없는 경우 빈 값 반환
         if not image_caption and not ocr_text:
             return ""
             
-        # If we only have one input, return it
+        # 입력이 하나만 있는 경우 그대로 반환
         if not ocr_text:
             return image_caption
         if not image_caption:
             return ocr_text
             
-        # Create input for text generation
+        # 텍스트 생성을 위한 입력 생성
         input_text = f"Image shows: {image_caption}. Text in the image: {ocr_text}."
         
-        # Use a lightweight text generator
+        # 가볍게 텍스트 생성기 사용
         generator = pipeline('text-generation', 
                             model='distilgpt2',
                             device=0 if torch.cuda.is_available() else -1)
         
-        # Generate a coherent description
+        # 일관된 설명 생성
         result = generator(input_text, 
                           max_length=100, 
                           num_return_sequences=1, 
                           temperature=0.7)
         
-        # Extract and clean generated text
+        # 생성된 텍스트 추출 및 정리
         generated_text = result[0]['generated_text']
         
-        # Clear CUDA cache
+        # CUDA 캐시 정리
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             
@@ -162,26 +162,26 @@ def generate_description(image_caption: str, ocr_text: str) -> str:
         return generated_text
     except Exception as e:
         logger.error(f"Error generating description: {e}")
-        # Fallback to simple concatenation
+        # 단순 묶기로 대체
         if ocr_text:
             return f"{image_caption}. The image contains text that reads: {ocr_text}"
         return image_caption
 
-# ===== MUSIC GENERATION MODULE =====
+# ===== 음악 생성 모듈 =====
 
 def setup_musicgen():
-    """Set up the MusicGen model with optimizations for low VRAM"""
+    """낮은 VRAM 사용을 위해 최적화된 MusicGen 모델 설정"""
     try:
-        # Import the library
+        # 라이브러리 가져오기
         from audiocraft.models import MusicGen
         import torch
         
-        # Use the smallest available model to conserve VRAM
+        # VRAM 절약을 위해 사용 가능한 가장 작은 모델 사용
         model = MusicGen.get_pretrained("facebook/musicgen-small", device=DEVICE)
         
-        # Optimize model for inference
+        # 추론을 위한 모델 최적화
         model.set_generation_params(
-            duration=5,  # Generate shorter clips (5 seconds)
+            duration=5,  # 더 짧은 클립 생성 (5초)
             temperature=1.0,
             top_k=250,
             top_p=0.0,
@@ -193,7 +193,7 @@ def setup_musicgen():
         logger.warning("AudioCraft not installed. Installing...")
         import subprocess
         try:
-            # Install AudioCraft
+            # AudioCraft 설치
             subprocess.check_call(["pip", "install", "audiocraft"])
             # Try again
             from audiocraft.models import MusicGen
@@ -208,31 +208,31 @@ def setup_musicgen():
         return None
 
 def generate_music(description: str, output_dir: str) -> Optional[str]:
-    """Generate music based on text description"""
+    """텍스트 설명을 기반으로 음악 생성"""
     try:
-        # Setup music generation model
+        # 음악 생성 모델 설정
         model = setup_musicgen()
         if model is None:
             return None
             
-        # Create prompt for music generation
+        # 음악 생성을 위한 프롬프트 생성
         prompt = f"Create music that captures the essence of: {description}"
         logger.info(f"Music generation prompt: {prompt}")
         
-        # Generate music
+        # 음악 생성
         wav = model.generate([prompt], progress=True)
         
-        # Save the generated audio
+        # 생성된 오디오 저장
         output_path = os.path.join(output_dir, f"generated_{int(time.time())}.wav")
         
-        # Convert to numpy and save
+        # numpy로 변환하고 저장
         audio_data = wav[0].cpu().numpy()
         
-        # Import here to reduce initial memory footprint
+        # SoundFile를 사용하여 저장
         import soundfile as sf
         sf.write(output_path, audio_data, samplerate=32000)
         
-        # Clear CUDA cache
+        # CUDA 캐시 정리
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             
@@ -254,15 +254,15 @@ def generate_music(description: str, output_dir: str) -> Optional[str]:
         logger.error(f"Music generation error: {e}")
         return None
 
-# ===== MAIN PROCESSING PIPELINE =====
+# ===== 메인 처리 파이프라인 =====
 
 def process_image(image_path: str, output_dir: str = "outputs") -> Dict[str, str]:
     """
-    Process an image to generate audio:
-    1. Extract keywords/caption from image
-    2. Perform OCR if text is present
-    3. Generate a coherent description
-    4. Create music based on the description
+    이미지를 처리하여 오디오 생성:
+    1. 이미지에서 키워드/캐프션 추출
+    2. 텍스트가 있는 경우 OCR 수행
+    3. 일관된 설명 생성
+    4. 설명을 기반으로 음악 생성
     """
     os.makedirs(output_dir, exist_ok=True)
     
@@ -304,9 +304,9 @@ def process_image(image_path: str, output_dir: str = "outputs") -> Dict[str, str
         results["error"] = str(e)
         return results
 
-# If run directly
+# 직접 실행하는 경우
 if __name__ == "__main__":
-    # Test with a sample image if provided as argument
+    # 인자로 제공된 경우 샘플 이미지로 테스트
     import sys
     if len(sys.argv) > 1:
         image_path = sys.argv[1]
@@ -314,4 +314,4 @@ if __name__ == "__main__":
         result = process_image(image_path)
         print(f"Results: {result}")
     else:
-        print("Please provide an image path as argument")
+        print("인자로 이미지 경로를 제공해주세요")

@@ -1,7 +1,7 @@
-// API configuration
+// API 구성
 export const API_BASE_URL = 'http://localhost:8001';
 
-// Default request options
+// 기본 요청 옵션
 export const DEFAULT_OPTIONS = {
     credentials: 'include' as RequestCredentials,
     headers: {
@@ -9,7 +9,7 @@ export const DEFAULT_OPTIONS = {
     },
 };
 
-// API endpoints
+// API 엔드포인트
 export const ENDPOINTS = {
     ESTIMATE_TIME: `${API_BASE_URL}/estimate-processing-time/`,
     UPLOAD_IMAGE_MUSIC: `${API_BASE_URL}/upload-image-music/`,

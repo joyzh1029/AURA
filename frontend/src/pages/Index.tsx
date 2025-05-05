@@ -192,7 +192,7 @@ const FileUploadHandler = () => {
                           setUploadedAudio(audioUrl);
                         } catch (error) {
                           console.error("Error generating music:", error);
-                          alert("음악 생성 중 오류가 발생했습니다.");  // 添加错误提示
+                          alert("음악 생성 중 오류가 발생했습니다.");  // 오류 추가
                         } finally {
                           setIsConverting(false);
                           setProcessingTime(null);

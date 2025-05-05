@@ -25,7 +25,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
 
   const audioRef = useRef<HTMLAudioElement>(null);
   
-  // Using a sample audio file as we're in demo mode
+  // 사용자 정의 오디오 파일 또는 데모 모드용 오디오 파일
   const demoAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
   const audioSource = audioUrl || demoAudioUrl;
 
@@ -46,12 +46,12 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
       setCurrentTime(0);
     };
 
-    // Set up event listeners
+    // 오디오 이벤트 리스너 설정
     audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', handleEnd);
 
-    // Clean up
+    // 정리
     return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
       audio.removeEventListener('timeupdate', setAudioTime);
@@ -59,7 +59,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
     };
   }, []);
   
-  // Handle volume change
+  // 볼륨 변경 처리
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
@@ -103,7 +103,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  // Generate bars for the audio wave effect
+  // 오디오 웨이브 효과를 위한 바 생성
   const generateWaveBars = (count: number) => {
     return Array.from({ length: count }).map((_, index) => (
       <div 
