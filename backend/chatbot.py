@@ -41,9 +41,16 @@ def get_query_type(text: str) -> str:
     
     # 변환 요청 패턴
     conversion_patterns = {
-        "en": ["convert", "change", "transform"],
-        "zh": ["转换", "变成", "生成"],
-        "ko": ["변환", "바꾸", "만들"]
+        "en": ["convert", "change", "transform", "upload"],
+        "zh": ["转换", "变成", "生成", "上传"],
+        "ko": ["변환", "바꾸", "만들", "업로드"]
+    }
+    
+    # 새로운 변환 요청 키워드
+    new_conversion_words = {
+        "ko": ["업로드하시면", "파일을", "이미지나", "비디오를"],
+        "en": ["upload your", "file to", "image or", "video to"],
+        "zh": ["上传您的", "文件来", "图片或", "视频来"]
     }
     
     # 인사말만 있는 경우
@@ -51,11 +58,21 @@ def get_query_type(text: str) -> str:
        not any(pattern in text_lower for patterns_list in conversion_patterns.values() for pattern in patterns_list):
         return "greeting"
     
-    # 변환 요청 확인
-    if any(pattern in text_lower for patterns_list in conversion_patterns.values() for pattern in patterns_list) or \
-       "음악" in text_lower or "music" in text_lower or "音乐" in text_lower:
+    # 변환 요청 확인 - 새로운 조건 추가
+    is_conversion = False
+    
+    # 기본 변환 패턴 확인
+    if any(pattern in text_lower for patterns_list in conversion_patterns.values() for pattern in patterns_list):
+        is_conversion = True
+    
+    # 새로운 변환 키워드 확인
+    if any(word in text_lower for words_list in new_conversion_words.values() for word in words_list):
+        is_conversion = True
+    
+    # 음악 관련 키워드가 있고 파일 업로드나 변환에 관한 내용이 있는 경우에만 변환으로 처리
+    if ("음악" in text_lower or "music" in text_lower or "音乐" in text_lower) and is_conversion:
         return "conversion"
-        
+    
     return "other"
 
 def detect_language(text: str) -> str:
@@ -335,34 +352,46 @@ def process_message(
             }
             
             return conversion_guides.get(detected_lang, conversion_guides["en"])
+            
+        # 기타 일반 질문 처리
+        else:
+            print("[INFO] General query detected, using conversation chain")
+            try:
+                # 사용자 언어에 따른 시스템 메시지
+                system_messages = {
+                    "ko": "당신은 AURA의 AI 어시스턴트입니다. 이미지와 비디오를 음악으로 변환하는 서비스를 제공합니다. 2-3줄로 간단명료하게 답변해주세요.",
+                    "en": "You are AURA's AI assistant that converts images and videos to music. Keep your responses brief and clear, within 2-3 lines.",
+                    "zh": "你是AURA的AI助手，可以将图片和视频转换为音乐。请用2-3行简短的语言回答问题。"
+                }
+                
+                # 시스템 메시지 설정
+                conversation.memory.chat_memory.add_user_message(system_messages.get(detected_lang, system_messages["en"]))
+                
+                # Gemini로 응답 생성
+                response = conversation.predict(input=message)
+                print(f"[INFO] Generated response using conversation chain")
+                
+                # 응답 검증 및 번역
+                if response and len(response.strip()) > 0:
+                    # 응답을 2-3줄로 제한
+                    lines = [line for line in response.strip().split('\n') if line.strip()]
+                    short_response = '\n'.join(lines[:3])
+                    
+                    validated_response = validate_translation(short_response, detected_lang)
+                    if len(validated_response.strip()) > 0:
+                        return validated_response
+                        
+                print("[WARNING] Empty or invalid response from conversation chain")
+                
+            except Exception as e:
+                print(f"[ERROR] Conversation chain error: {str(e)}")
+                
+            return get_fallback_response(detected_lang)
                 
     except Exception as e:
-        print(f"처리 실패: {str(e)}")
+        print(f"[ERROR] Message processing failed: {str(e)}")
         return get_fallback_response(detected_lang)
-        
-        # 응답 생성
-        if qa_chain:
-            # 始终尝试使用知识库
-            rag_result = qa_chain({"query": input_text})
-            response = rag_result.get('result', '')
-            
-            # 记录使用的知识库内容
-            if 'source_documents' in rag_result:
-                print("[INFO] Used knowledge base documents:")
-                for doc in rag_result['source_documents']:
-                    print(f"- {doc.page_content[:100]}...")
-            
-            # 如果RAG结果不理想，回退到普通对话
-            if not response or len(response.strip()) < 10:
-                print("[INFO] RAG response too short, falling back to conversation")
-                response = conversation.predict(input=input_text)
-        else:
-            response = conversation.predict(input=input_text)
-        
-        # 응답이 올바른 언어인지 확인
-        return response  # 검증 후 직접 반환
-    
-    return get_fallback_response(lang)
+
 
 def get_fallback_response(lang: str) -> str:
     """언어별 안전망 응답"""
