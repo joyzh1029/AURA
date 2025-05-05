@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ChatProvider, useChat } from '@/contexts/ChatContext';
 import ChatContainer from '@/components/Chat/ChatContainer';
 import { Sparkles, Music, Image as ImageIcon, Video, Upload, RefreshCw } from 'lucide-react';
-import FileUploader from '@/components/FileUpload/FileUploader';
+import FileUploader from "@/components/FileUpload/FileUploader";
+import { ENDPOINTS } from "@/config/api";
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
@@ -22,6 +23,7 @@ const FileUploadHandler = () => {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [resetTrigger, setResetTrigger] = useState(0);
 
   const hasFileUploaded = selectedImageFile !== null || selectedVideoFile !== null;
@@ -86,8 +88,13 @@ const FileUploadHandler = () => {
                   <>
                     {isConverting ? (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
-                        <div className="text-white text-xl font-medium">
-                          음악 생성중입니다...
+                        <div className="text-white text-xl font-medium flex flex-col items-center gap-2">
+                          <div>음악 생성중입니다...</div>
+                          {processingTime && (
+                            <div className="text-sm">
+                              예상 소요시간: 약 {processingTime}초
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : uploadedAudio ? (
@@ -137,21 +144,43 @@ const FileUploadHandler = () => {
                       onFileSelect={async (file) => {
                         setSelectedImageFile(file);
                         setIsConverting(true);
+                        
                         try {
+                          // 시간 예측 요청
+                          const timeEstimateFormData = new FormData();
+                          timeEstimateFormData.append("file", file);
+                          console.log('发送时间预测请求...');
+                          const timeResponse = await fetch(ENDPOINTS.ESTIMATE_TIME, {
+                            method: "POST",
+                            body: timeEstimateFormData,
+                          });
+                          
+                          if (timeResponse.ok) {
+                            const timeEstimate = await timeResponse.json();
+                            console.log('收到时间预测结果:', timeEstimate);
+                            setProcessingTime(timeEstimate.total_seconds);
+                          } else {
+                            console.error('时间预测请求失败:', await timeResponse.text());
+                          }
+
+                          // 음악 생성 요청
                           const formData = new FormData();
                           formData.append("file", file);
-                          const response = await fetch("/upload-image-music/", {
+                          const response = await fetch(ENDPOINTS.UPLOAD_IMAGE_MUSIC, {
                             method: "POST",
                             body: formData,
                           });
+                          
                           if (!response.ok) throw new Error("음악 생성 요청 실패");
                           const blob = await response.blob();
                           const audioUrl = URL.createObjectURL(blob);
                           setUploadedAudio(audioUrl);
                         } catch (error) {
                           console.error("Error generating music:", error);
+                          alert("음악 생성 중 오류가 발생했습니다.");  // 添加错误提示
                         } finally {
                           setIsConverting(false);
+                          setProcessingTime(null);
                         }
                       }}
                       resetTrigger={resetTrigger}

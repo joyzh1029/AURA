@@ -24,8 +24,13 @@ from chatbot import get_chatbot, process_message
 
 # 이미지 기반 음악 생성 모듈 import
 from logic.image_music_generator import ImageMusicGenerator
+from logic.time_estimator import ProcessingTimeEstimator
+from PIL import Image
 
 app = FastAPI()
+
+# Initialize time estimator
+time_estimator = ProcessingTimeEstimator()
 
 # CORS 설정
 app.add_middleware(
@@ -237,6 +242,39 @@ async def upload_video(file: UploadFile = File(...)):
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # 이미지 업로드 → 음악 생성 → wav 다운로드 API (개선됨)
+@app.post("/estimate-processing-time/")
+async def estimate_processing_time(file: UploadFile = File(...)):
+    """
+    预测处理时间的端点
+    """
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 가능합니다.")
+
+    try:
+        print(f"[INFO] 开始处理时间预测请求")
+        # 创建临时文件来获取图片尺寸
+        with NamedTemporaryFile(delete=False) as temp_file:
+            shutil.copyfileobj(file.file, temp_file)
+            temp_file_path = temp_file.name
+            print(f"[INFO] 临时文件已创建: {temp_file_path}")
+
+        try:
+            with Image.open(temp_file_path) as img:
+                image_size = img.size
+                print(f"[INFO] 图片尺寸: {image_size}")
+        finally:
+            os.unlink(temp_file_path)
+
+        # 预测处理时间
+        time_estimate = time_estimator.estimate_processing_time(image_size)
+        print(f"[INFO] 时间预测结果: {time_estimate}")
+        return time_estimate
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        file.file.seek(0)  # 重置文件指针，以便后续处理
+
 @app.post("/upload-image-music/")
 async def upload_image_music(file: UploadFile = File(...)):
     """
