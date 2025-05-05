@@ -299,7 +299,7 @@ def get_chatbot() -> Tuple[ConversationChain, RetrievalQA]:
         return conversation, qa_chain
     except Exception as e:
         print(f"[ERROR] Failed to initialize chatbot: {str(e)}")
-        # 创建一个基本的对话链作为后备
+        # 기본 대화 체인 생성 (비트)
         basic_llm = ChatGoogleGenerativeAI(
             google_api_key=GOOGLE_API_KEY,
             model="gemini-pro",
@@ -403,7 +403,7 @@ def get_fallback_response(lang: str) -> str:
     return fallback_responses.get(lang, fallback_responses["en"])
 
 def generate_fallback_response(lang: str) -> str:
-    """兼容旧的函数名"""
+    """함수 이름 변경을 위한 호환"""
     return get_fallback_response(lang)
 
 def get_greeting_response(lang: str) -> str:
