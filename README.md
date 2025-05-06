@@ -112,7 +112,7 @@ python main.py
 
 ## 📁 프로젝트 구조
 ```
-AURA2/
+AURA/
 ├── README.md
 ├── backend/
 │   ├── main.py                # FastAPI 백엔드 메인 서버
