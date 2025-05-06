@@ -112,20 +112,52 @@ python main.py
 
 ## 📁 프로젝트 구조
 ```
-project_root/
-├── main.py
-├── runner.py
-├── logic/
-│   ├── frame_extractor.py
-│   ├── blip_emotion_analyzer.py
-│   ├── llm_prompt_refiner.py
-│   ├── music_generator.py
-│   └── chatbot.py
-├── uploads/
-├── knowledge_base/
-├── frontend/
-├── requirements.txt
-└── .env
+AURA2/
+├── README.md
+├── backend/
+│   ├── main.py                # FastAPI 백엔드 메인 서버
+│   ├── chatbot.py             # 챗봇 구현
+│   ├── runner.py              # 비디오-음악 파이프라인 실행기
+│   ├── requirements.txt       # Python 의존성
+│   ├── knowledge_base/        # 지식 베이스
+│   │   ├── greetings.txt
+│   │   └── usage_guide.txt
+│   ├── logic/                 # 핵심 로직
+│   │   ├── blip_emotion_analyzer.py    # 감정 분석
+│   │   ├── frame_extractor.py          # 비디오 프레임 추출
+│   │   ├── image_music_generator.py    # 이미지-음악 생성기
+│   │   ├── img2music.py               # 이미지-음악 변환
+│   │   ├── llm_prompt_refiner.py      # LLM 프롬프트 최적화
+│   │   ├── music_generator.py         # 음악 생성기
+│   │   └── time_estimator.py         # 처리 시간 추정
+│   ├── uploads/               # 업로드 파일 임시 저장
+│   └── results/               # 생성 결과 저장
+│
+└── frontend/
+    ├── public/                # 정적 리소스
+    │   ├── favicon.ico
+    │   ├── placeholder.svg
+    │   └── robots.txt
+    ├── src/
+    │   ├── App.tsx           # React 앱 진입점
+    │   ├── App.css           # 글로벌 스타일
+    │   ├── components/       # React 컴포넌트
+    │   │   ├── Chat/         # 채팅 관련 컴포넌트
+    │   │   │   ├── ChatContainer.tsx
+    │   │   │   ├── ChatInput.tsx
+    │   │   │   └── ChatMessage.tsx
+    │   │   ├── FileUpload/   # 파일 업로드 컴포넌트
+    │   │   │   └── FileUploader.tsx
+    │   │   ├── ImagePreview/ # 이미지 미리보기 컴포넌트
+    │   │   │   └── ImagePreview.tsx
+    │   │   ├── MusicPlayer/  # 음악 플레이어 컴포넌트
+    │   │   │   └── MusicPlayer.tsx
+    │   │   ├── VoiceInput/   # 음성 입력 컴포넌트
+    │   │   └── ui/           # UI 컴포넌트 라이브러리
+    │   └── config/           # 설정 파일
+    ├── package.json          # npm 패키지 관리
+    └── components.json       # 컴포넌트 설정
+
 ```
 
 AURA 팀은 사용자의 피드백을 소중히 생각하며, 서비스를 지속적으로 개선하고 있습니다. AURA로 창의적인 음악 변환을 즐겨보세요!
