@@ -1,0 +1,56 @@
+안녕하세요!
+
+AURA에 오신 것을 환영합니다.
+
+AURA는 이미지와 비디오를 음악으로 변환해 주는 AI 서비스입니다.
+
+AURA의 주요 기능:
+- 비디오 또는 이미지 업로드 후 시스템이 콘텐츠의 분위기와 내용을 분석하여 맞춤형 음악 생성
+- 변환 과정에서 사용자의 선호도와 요구사항 반영 가능
+- AURA는 사용자의 언어에 따라 응답할 수 있습니다.
+
+시작하려면 이미지나 비디오 파일을 업로드하시거나 구체적으로 도움이 필요한 내용을 문의해 주시기 바랍니다.
+
+AURA 팀은 서비스를 지속적으로 개선해 나가고 있으며 사용자의 피드백을 소중히 생각합니다.
+
+AURA 서비스를 즐겁게 이용하시기 바랍니다.
+
+---
+
+您好！
+
+欢迎来到AURA。
+
+AURA是一项将图像和视频转换为音乐的AI服务。
+
+AURA的主要功能：
+- 上传视频或图片后，系统会分析内容的氛围和细节，生成音乐
+- 转换过程中可反映用户的偏好和需求
+- AURA可根据用户的语言进行响应
+
+如需开始，请上传图片或视频文件，或咨询具体帮助内容。
+
+AURA团队持续优化服务，重视您的反馈。
+
+祝您愉快地使用AURA服务。
+
+---
+
+Hello!
+
+Welcome to AURA.
+
+AURA is an AI service that converts images and videos into music.
+
+Key features of AURA:
+- After uploading a video or image, the system analyzes the mood and content to generate music
+- User preferences and requirements can be reflected during the conversion process
+- AURA can respond in your preferred language
+
+To get started, please upload an image or video file, or ask for specific assistance.
+
+The AURA team is continuously improving the service and values your feedback.
+
+Enjoy using AURA!
+
+

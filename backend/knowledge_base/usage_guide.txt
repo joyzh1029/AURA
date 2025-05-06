@@ -1,0 +1,59 @@
+이미지나 비디오를 음악으로 변환하는 방법:
+
+1. 이미지 변환:
+   - 이미지 파일을 업로드 영역에 드래그하거나 클릭하여 선택합니다
+   - 시스템이 자동으로 이미지를 분석하고 적절한 음악을 생성합니다
+   - 생성된 음악은 자동으로 재생되며, 다운로드도 가능합니다
+
+2. 비디오 변환:
+   - 비디오 파일을 업로드 영역에 드래그하거나 클릭하여 선택합니다
+   - 시스템이 비디오의 내용을 분석하여 맞춤형 음악을 생성합니다
+   - 음악이 포함된 새로운 비디오가 자동으로 재생됩니다
+
+주요 기능:
+- 다양한 이미지 형식 지원 (JPG, PNG, GIF 등)
+- 다양한 비디오 형식 지원 (MP4, AVI, MOV 등)
+- AI 기반 콘텐츠 분석
+- 실시간 음악 생성
+- 자동 재생 기능
+- 생성된 결과물 다운로드 가능
+
+How to convert images or videos to music:
+
+1. Image Conversion:
+   - Drag and drop an image file into the upload area or click to select
+   - The system will automatically analyze the image and generate appropriate music
+   - The generated music will play automatically and can be downloaded
+
+2. Video Conversion:
+   - Drag and drop a video file into the upload area or click to select
+   - The system will analyze the video content and generate custom music
+   - A new video with the generated music will play automatically
+
+Key Features:
+- Supports various image formats (JPG, PNG, GIF, etc.)
+- Supports various video formats (MP4, AVI, MOV, etc.)
+- AI-powered content analysis
+- Real-time music generation
+- Auto-play functionality
+- Downloadable results
+
+如何将图像或视频转换为音乐：
+
+1. 图像转换：
+   - 将图像文件拖放到上传区域或点击选择
+   - 系统将自动分析图像并生成相应的音乐
+   - 生成的音乐将自动播放，并可以下载
+
+2. 视频转换：
+   - 将视频文件拖放到上传区域或点击选择
+   - 系统将分析视频内容并生成定制音乐
+   - 带有生成音乐的新视频将自动播放
+
+主要功能：
+- 支持多种图像格式（JPG、PNG、GIF等）
+- 支持多种视频格式（MP4、AVI、MOV等）
+- AI驱动的内容分析
+- 实时音乐生成
+- 自动播放功能
+- 可下载生成结果
