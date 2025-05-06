@@ -89,3 +89,9 @@ yarn-error.log
 dist/
 build/
 out/
+
+# Backend directories
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/results/*
+!backend/results/.gitkeep
