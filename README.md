@@ -1,130 +1,116 @@
-# 🎬 AI 감성 자동 뮤직비디오 생성기
+# 🎵 AURA - AI 감성 음악 생성기
 
-AI가 비디오를 분석하여 감성적인 자막을 추출하고, 이를 바탕으로 음악을 작곡한 뒤 비디오와 합성하여 감성 뮤직비디오를 자동으로 생성하는 프로젝트입니다.
+## 🔍 프로젝트 개요
+AURA는 이미지 또는 비디오의 분위기와 내용을 AI가 분석하여, 음악을 생성하고 감성적인 결과물을 제공하는 시스템입니다. 다양한 파일 형식을 지원하며, 실시간 음악 생성, 다운로드, 그리고 다국어 챗봇을 통한 사용자 친화적 인터랙션을 제공합니다.
 
----
+## 📑 목차
+- [프로젝트 개요](#-프로젝트-개요)
+- [주요 기능](#-주요-기능)
+- [사용 방법](#-사용-방법)
+- [기술 스택](#-기술-스택)
+- [설치 방법](#-설치-방법)
+- [프로젝트 구조](#-프로젝트-구조)
 
-## 🧩 주요 기능 구성
+## 🛠 주요 기능
+1. **콘텐츠 업로드 및 분석**
+   - 이미지 (JPG, PNG, GIF 등) 및 비디오 (MP4, AVI, MOV 등) 업로드
+   - FastAPI 기반 API
+   - BLIP 모델을 통한 콘텐츠 분석
+   - 다중 감성 자막 추출 (top_caption, top_captions, all_captions)
 
-1. **입력 비디오 업로드 (FastAPI)**
-   - 클라이언트에서 비디오를 업로드하면 `/upload-video/` API가 이를 수신함
-   - 용량 제한: **100MB 이하**
+2. **맞춤형 음악 생성**
+   - Gemini 1.5 Pro를 활용한 감성 프롬프트 생성
+   - Meta의 audiocraft MusicGen 모델로 고품질 음악 생성
+   - 스테레오 → 모노 오디오 변환
 
-2. **[1단계] 프레임 추출**
-   - 모듈: `frame_extractor.py`
-   - 클래스: `FrameExtractor`
-   - OpenCV로 비디오를 1초 간격으로 추출 → `PIL.Image`로 변환
+3. **결과물 합성 및 출력**
+   - moviepy를 통한 비디오-오디오 합성
+   - 생성된 음악 또는 뮤직비디오 자동 재생
+   - 최적화된 MP4 출력 및 다운로드 지원
 
-3. **[2단계] 감성 분석 (BLIP 기반 자막 생성)**
-   - 모듈: `blip_emotion_analyzer.py`
-   - 클래스: `BLIPEmotionAnalyzer`
-   - 모델: `Salesforce/blip-image-captioning-base`
-   - 프레임 별 자막 생성 후 가장 자주 등장하는 문장을 `top_caption`으로 추출
-   - 자주 등장하는 상위 5개 문장은 `top_captions`로 반환
+4. **다국어 챗봇**
+   - LangChain과 Gemini 1.5 Flash를 활용한 대화형 AI
+   - 한국어, 영어, 중국어 지원
+   - 사용자 의도 분석 (인사말, 변환 요청, 일반 질문)
+   - 지식 베이스 기반 RAG(Retrieval-Augmented Generation)로 정확한 답변 제공
+   - 사용자 언어에 맞춘 자연스러운 응답 및 번역 기능
 
-4. **[3단계] 감성 기반 프롬프트 생성 (Gemini 1.5 Pro)**
-   - 모듈: `llm_prompt_refiner.py`
-   - 클래스: `LLMPromptRefiner`
-   - `.env` 파일에 `GOOGLE_API_KEY` 필요
-   - Gemini가 감성적인 음악 프롬프트를 영어로 생성  
-     예: `"A soft classical piano melody echoing through a tranquil library..."`
+## 🎬 사용 방법
+### 1. 이미지 변환
+- 이미지 파일을 업로드 영역에 드래그하거나 클릭하여 선택
+- 시스템이 이미지를 분석하고 적절한 음악을 생성
+- 생성된 음악이 자동 재생되며, 다운로드 가능
 
-5. **[4단계] 음악 생성 (audiocraft MusicGen)**
-   - 모듈: `music_generator.py`
-   - 클래스: `MusicGenerator`
-   - 모델: `facebook/musicgen-small`
-   - 프롬프트 기반 음악 생성 → WAV 파일 저장 (Stereo → Mono 변환)
+### 2. 비디오 변환
+- 비디오 파일을 업로드 영역에 드래그하거나 클릭하여 선택
+- 시스템이 비디오 내용을 분석하여 맞춤형 음악 생성
+- 음악이 포함된 새로운 비디오가 자동 재생되며, 다운로드 가능
 
-6. **[5단계] 비디오 + 음악 합성**
-   - 모듈: `runner.py`
-   - 함수: `combine_video_audio`
-   - `moviepy`를 사용하여 `.mp4`로 합성 출력
+### 3. 챗봇 상호작용
+- AURA 챗봇과의 대화 
+- 예: "이미지를 음악으로 변환해 주세요" 또는 "안녕하세요"
+- 챗봇이 사용자의 언어를 감지하고 적절한 응답 제공
+- 서비스 정보등
 
-7. **[6단계] 최종 결과 전송**
-   - `/upload-video/` API가 최종 `.mp4` 파일을 `StreamingResponse`로 반환
-
----
-
-## 🔧 사용 라이브러리
-
-```
-torch  
-transformers  
-google-generativeai  
-audiocraft  
-moviepy  
-opencv-python  
-Pillow  
-numpy  
-scipy  
-fastapi  
-python-dotenv
-```
-
----
-
-## ⚠️ 사용 전 준비 사항
-
-### 1. CUDA 버전 Torch 설치 (cu118 기준)
-
-```bash
-pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
-```
-
-### 프론트엔드 설치
-- Node.js 설치
-https://nodejs.org/ko
-
-```bash
-cd frontend
-npm install
-```
-
----
-
-### 백엔드 서버 실행
-```bash
-cd backend
-python main.py
-```
-
-### 프론트엔드 개발 서버 실행
-```bash
-cd frontend
-npm run dev
-```
-
-## 주요 기능
-
-1. 이미지 업로드
-   - 단일 이미지 업로드
-   - 다중 이미지 업로드 지원
-   - 이미지 미리보기
-
-2. 음악 변환
-   - 이미지에서 음악으로 변환
-   - 음악 재생 기능
-
-3. 대화형 인터페이스
-   - 직관적인 채팅 인터페이스
-   - 실시간 응답
-
-## 기술 스택
-
+## ⚙️ 기술 스택
 ### 백엔드
 - FastAPI
-- Python
-- uvicorn
+- Python 3.10
+- CUDA 지원
+- LangChain (GoogleGenerativeAI, FAISS)
 
 ### 프론트엔드
 - React
 - TypeScript
 - Vite
 - Shadcn UI
-- TanStack Query
 
-## 프로젝트 구조
+## 🚀 설치 방법
+### 1. 백엔드 설정
+#### (1) Python 환경 설정
+- Python 3.10 이상 설치
+- 가상환경 생성 및 활성화
 
+#### (2) CUDA 설치 (cu118 기준)
+```bash
+pip install torch==2.1.0+cu118 torchvision==0.16.0+cu118 torchaudio==2.1.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+```
+
+#### (3) audiocraft 설치
+```bash
+pip install git+https://github.com/facebookresearch/audiocraft#egg=audiocraft
+```
+
+#### (4) 종속성 설치
+- `requirements.txt` 파일을 사용하여 필요한 라이브러리 설치:
+  ```bash
+  cd backend
+  pip install -r requirements.txt
+  ```
+
+### 2. 프론트엔드 설정및 실행
+#### (1) Node.js 설치
+- Node.js (버전 16 이상) 설치: [Node.js 공식 사이트](https://nodejs.org/)에서 다운로드 및 설치
+- 설치 확인:
+  ```bash
+  node -v
+  npm -v
+  ```
+
+#### (2) 프론트엔드 종속성 설치 및 실행
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 3. 백엔드 실행
+```bash
+cd backend
+python main.py
+```
+
+## 📁 프로젝트 구조
 ```
 project_root/
 ├── main.py
@@ -133,9 +119,14 @@ project_root/
 │   ├── frame_extractor.py
 │   ├── blip_emotion_analyzer.py
 │   ├── llm_prompt_refiner.py
-│   └── music_generator.py
+│   ├── music_generator.py
+│   └── chatbot.py
 ├── uploads/
-├── frontend/public/
-├── .env
+├── knowledge_base/
+├── frontend/
+├── requirements.txt
+└── .env
 ```
+
+AURA 팀은 사용자의 피드백을 소중히 생각하며, 서비스를 지속적으로 개선하고 있습니다. AURA로 창의적인 음악 변환을 즐겨보세요!
 
